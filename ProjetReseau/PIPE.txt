@@ -1,4 +1,0 @@
-PIPE
------
-A->B
-"bonjour" ->"BONJOUR"
