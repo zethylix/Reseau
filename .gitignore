@@ -1,0 +1,6 @@
+# Base créée au premier lancement : chaque poste a la sienne, elle ne doit pas être livrée
+helhanet.db
+
+# Fichiers générés par Python
+__pycache__/
+*.pyc

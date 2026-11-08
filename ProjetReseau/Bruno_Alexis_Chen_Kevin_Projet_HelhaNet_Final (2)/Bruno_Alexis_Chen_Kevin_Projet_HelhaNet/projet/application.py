@@ -70,6 +70,18 @@ def infos_utilisateur(nom: str):
 def utilisateur_existe(nom: str) -> bool:
     return infos_utilisateur(nom) is not None
 
+RESERVE_ADMIN = "Action réservée aux administrateurs actifs."
+
+def _numero_admin_actif(con, nom: str):
+    """
+    Numéro d'employé si `nom` est un administrateur actif, sinon None.
+    Relu en base à chaque action (B10) : un admin rétrogradé ou désactivé pendant
+    sa session ne peut plus gérer les comptes, même si son écran est encore ouvert.
+    """
+    r = con.execute("SELECT numero_employe FROM utilisateur "
+                    "WHERE nom = ? AND role = 'admin' AND actif = 1", (nom,)).fetchone()
+    return r[0] if r else None
+
 def creer_utilisateur(nom: str, numero_employe: str, role: str, nom_createur: str):
     """
     Crée un utilisateur avec MDP temporaire auto-généré.
@@ -84,14 +96,17 @@ def creer_utilisateur(nom: str, numero_employe: str, role: str, nom_createur: st
         return False, "Rôle invalide."
     mdp_tmp = generer_mdp_temporaire()
     with bd.ouvrir() as con:
+        createur = _numero_admin_actif(con, nom_createur)
+        if not createur:
+            return False, RESERVE_ADMIN
         if con.execute("SELECT 1 FROM utilisateur WHERE nom = ?", (nom,)).fetchone():
             return False, f"L'utilisateur « {nom} » existe déjà."
         if con.execute("SELECT 1 FROM utilisateur WHERE numero_employe = ?", (numero_employe,)).fetchone():
             return False, f"Le numéro d'employé {numero_employe} est déjà utilisé."
         con.execute(
             "INSERT INTO utilisateur (numero_employe, nom, hash, role, must_change, cree_par) "
-            "VALUES (?, ?, ?, ?, 1, (SELECT numero_employe FROM utilisateur WHERE nom = ?))",
-            (numero_employe, nom, hash_mdp(mdp_tmp).decode(), role, nom_createur))
+            "VALUES (?, ?, ?, ?, 1, ?)",
+            (numero_employe, nom, hash_mdp(mdp_tmp).decode(), role, createur))
     return True, mdp_tmp
 
 def changer_mdp(nom: str, nouveau_mdp: str):
@@ -115,10 +130,12 @@ def basculer_activation(nom_cible: str, nom_actuel: str):
     if nom_cible == nom_actuel:
         return False, "Vous ne pouvez pas désactiver votre propre compte."
     with bd.ouvrir() as con:
+        auteur = _numero_admin_actif(con, nom_actuel)
+        if not auteur:
+            return False, RESERVE_ADMIN
         cur = con.execute(
             "UPDATE utilisateur SET actif = 1 - actif, modifie_le = CURRENT_TIMESTAMP, "
-            "modifie_par = (SELECT numero_employe FROM utilisateur WHERE nom = ?) WHERE nom = ?",
-            (nom_actuel, nom_cible))
+            "modifie_par = ? WHERE nom = ?", (auteur, nom_cible))
         if cur.rowcount == 0:
             return False, "Utilisateur introuvable."
         actif = con.execute("SELECT actif FROM utilisateur WHERE nom = ?", (nom_cible,)).fetchone()[0]
@@ -128,6 +145,9 @@ def changer_role(nom_cible: str, nouveau_role: str, nom_actuel: str):
     if nouveau_role not in ("admin", "user"):
         return False, "Rôle invalide."
     with bd.ouvrir() as con:
+        auteur = _numero_admin_actif(con, nom_actuel)
+        if not auteur:
+            return False, RESERVE_ADMIN
         cible = con.execute("SELECT role, actif FROM utilisateur WHERE nom = ?", (nom_cible,)).fetchone()
         if not cible:
             return False, "Utilisateur introuvable."
@@ -137,18 +157,19 @@ def changer_role(nom_cible: str, nouveau_role: str, nom_actuel: str):
             return False, "Impossible : dernier administrateur actif."
         con.execute(
             "UPDATE utilisateur SET role = ?, modifie_le = CURRENT_TIMESTAMP, "
-            "modifie_par = (SELECT numero_employe FROM utilisateur WHERE nom = ?) WHERE nom = ?",
-            (nouveau_role, nom_actuel, nom_cible))
+            "modifie_par = ? WHERE nom = ?", (nouveau_role, auteur, nom_cible))
     return True, f"Rôle de « {nom_cible} » changé en {nouveau_role}."
 
 def reinitialiser_mdp(nom_cible: str, nom_actuel: str):
     """Génère un nouveau MDP temporaire et force le changement à la prochaine connexion."""
     mdp_tmp = generer_mdp_temporaire()
     with bd.ouvrir() as con:
+        auteur = _numero_admin_actif(con, nom_actuel)
+        if not auteur:
+            return False, RESERVE_ADMIN
         cur = con.execute(
             "UPDATE utilisateur SET hash = ?, must_change = 1, modifie_le = CURRENT_TIMESTAMP, "
-            "modifie_par = (SELECT numero_employe FROM utilisateur WHERE nom = ?) WHERE nom = ?",
-            (hash_mdp(mdp_tmp).decode(), nom_actuel, nom_cible))
+            "modifie_par = ? WHERE nom = ?", (hash_mdp(mdp_tmp).decode(), auteur, nom_cible))
         if cur.rowcount == 0:
             return False, "Utilisateur introuvable."
     return True, mdp_tmp
@@ -168,11 +189,9 @@ def demander_reinit_globale(nom_admin: str):
     tous les comptes doivent changer leur MDP. Retourne (ok, message).
     """
     with bd.ouvrir() as con:
-        admin = con.execute("SELECT numero_employe FROM utilisateur "
-                            "WHERE nom = ? AND role = 'admin' AND actif = 1", (nom_admin,)).fetchone()
-        if not admin:
-            return False, "Action réservée aux administrateurs."
-        numero = admin[0]
+        numero = _numero_admin_actif(con, nom_admin)
+        if not numero:
+            return False, RESERVE_ADMIN
         nb_admins = con.execute(
             "SELECT COUNT(*) FROM utilisateur WHERE role = 'admin' AND actif = 1").fetchone()[0]
         if nb_admins < 2:
