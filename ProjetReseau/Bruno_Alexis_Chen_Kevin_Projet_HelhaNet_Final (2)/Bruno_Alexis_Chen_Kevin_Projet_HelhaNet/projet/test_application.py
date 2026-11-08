@@ -180,6 +180,24 @@ class TestBase(unittest.TestCase):
         self.assertEqual(app.infos_utilisateur("alice")["role"], "user")
         self.assertFalse(app.changer_role("bob", "user", "bob")[0])  # dernier admin actif
 
+    def test_admin_retrograde_ne_gere_plus_les_comptes(self):
+        """B10 : les droits sont relus en base à chaque action, pas seulement à la connexion."""
+        self._admin()
+        app.creer_utilisateur("bob", "2002", "admin", "alice")
+        _, mdp_carl = app.creer_utilisateur("carl", "3003", "user", "alice")
+        self.assertTrue(app.changer_role("alice", "user", "bob")[0])   # bob rétrograde alice
+
+        self.assertFalse(app.creer_utilisateur("eve", "4004", "admin", "alice")[0])
+        self.assertFalse(app.reinitialiser_mdp("carl", "alice")[0])
+        self.assertFalse(app.basculer_activation("carl", "alice")[0])
+        self.assertFalse(app.changer_role("carl", "admin", "alice")[0])
+        self.assertFalse(app.demander_reinit_globale("alice")[0])
+
+        self.assertIsNone(app.infos_utilisateur("eve"))
+        self.assertEqual(app.connexion("carl", mdp_carl)[0], "ok")      # MDP inchangé
+        self.assertEqual(app.infos_utilisateur("carl")["role"], "user")
+        self.assertTrue(app.infos_utilisateur("carl")["actif"])
+
     def test_bouton_securite_deux_admins(self):
         self._admin()
         self.assertFalse(app.demander_reinit_globale("alice")[0])  # un seul admin

@@ -257,10 +257,11 @@ class AppHelha:
         self.user_numero = None
         self._afficher_demarrage()
 
-    def _verifier_session(self) -> bool:
+    def _verifier_session(self, prevenir=True) -> bool:
         """
         Relit le compte en base avant chaque action : un rôle changé, un compte
-        désactivé ou un changement de MDP imposé s'appliquent tout de suite.
+        désactivé ou un changement de MDP imposé s'appliquent tout de suite,
+        et l'action en cours est annulée (B10).
         """
         infos = application.infos_utilisateur(self.user_nom)
         if not infos or not infos["actif"]:
@@ -272,8 +273,14 @@ class AppHelha:
             self._afficher_changement_mdp_force()
             return False
         if infos["role"] != self.user_role:
+            # Avant : le menu était redessiné mais l'action continuait, donc un admin
+            # rétrogradé pouvait encore créer un compte ou réinitialiser un MDP.
             self.user_role = infos["role"]
             self._afficher_menu()
+            if prevenir:
+                messagebox.showinfo("Session", f"Votre rôle a été modifié ({self.user_role}).\n"
+                                               "Le menu a été mis à jour.")
+            return False
         return True
 
     def _afficher_changement_mdp_force(self):
@@ -807,7 +814,7 @@ class AppHelha:
     def _popup_mdp_oneshot(self, nom, mdp_tmp, parent=None):
         win = tk.Toplevel(self.root)
         win.title("Mot de passe temporaire")
-        win.geometry("400x230")
+        win.geometry("400x280")
         win.configure(bg="#FFFFFF")
         win.resizable(False, False)
         win.grab_set()
@@ -823,8 +830,22 @@ class AppHelha:
                  bg="#FFFFFF", fg=GRIS, font=("Segoe UI", 9), justify="center").pack(pady=(4, 10))
         box = tk.Frame(win, bg="#F3F4F6", padx=16, pady=10)
         box.pack(padx=40, fill="x")
-        tk.Label(box, text=mdp_tmp, font=("Courier", 16, "bold"),
-                 bg="#F3F4F6", fg=NOIR).pack()
+        # Champ en lecture seule plutôt qu'un Label : le MDP se sélectionne et se copie (B16)
+        champ = tk.Entry(box, font=("Courier", 16, "bold"), justify="center", width=10,
+                         relief="flat", bd=0, fg=NOIR, readonlybackground="#F3F4F6")
+        champ.insert(0, mdp_tmp)
+        champ.config(state="readonly")
+        champ.pack(side="left", fill="x", expand=True)
+        champ.select_range(0, "end")
+        champ.focus_set()
+
+        def copier():
+            self.root.clipboard_clear()
+            self.root.clipboard_append(mdp_tmp)
+            btn_copier.config(text="✔ Copié")
+
+        btn_copier = self._btn(box, "📋 Copier", copier, couleur="#6366F1")
+        btn_copier.pack(side="left", padx=(8, 0), ipadx=6)
 
         def fermer():
             win.destroy()
@@ -845,7 +866,8 @@ class AppHelha:
             messagebox.showerror("Erreur", msg); return
         messagebox.showinfo("Succès", msg)
         if nom == self.user_nom:
-            self._verifier_session()   # on vient de se rétrograder : le menu admin disparaît
+            # on vient de se rétrograder : le menu admin disparaît (message déjà affiché)
+            self._verifier_session(prevenir=False)
         else:
             self._rafraichir_users()
 
