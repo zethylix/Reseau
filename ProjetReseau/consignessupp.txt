@@ -1,0 +1,14 @@
+	
+Bonjour à toutes et tous, 
+
+Concernant votre projet, j'ai eu l'occasion de discuter avec de nombreux développeurs d'équipes différentes et j'ai modifié mon point de vue sur différents sujets (hé oui, certains clients se rendent compte des problèmes suite à leur demande en cours de développement 😄)
+
+Voici donc les nouvelles décisions : 
+
+Dans la base de données, pour la fonctionnalité 1, on stocke aussi le résultat
+Dans la base de données, pour les fonctionnalités 2 à 6, on ne garde pas les résultats (on peut sans souci recalculer les résultats sur base des infos sauvegardées).
+Pour les fonctionnalités 5 et 6, vous devez toujours garder l'identité de la dernière personne ayant modifié l'enregistrement (pas pour les autres, ça n'a pas de sens)
+Je souhaite un bouton de sécurité pour les admins : si on apprend qu'un vol de la base de données a eu lieu, l'admin peut appuyer sur ce bouton qui force tous les utilisateurs à changer leur mot de passe. Ce bouton doit être cliqué par 2 utilisateurs pour démarrer l'action de blocage des utilisateurs. Réfléchissez bien à la manière de faire : ce n'est pas la même chose que bloquer un utilisateur parce qu'on veut qu'il n'accède plus au logiciel!
+Bon courage!
+
+Isabelle Boulogne
