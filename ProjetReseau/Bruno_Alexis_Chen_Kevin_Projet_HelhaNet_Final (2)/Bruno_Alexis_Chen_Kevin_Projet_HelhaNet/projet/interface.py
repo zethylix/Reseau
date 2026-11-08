@@ -12,14 +12,17 @@ VERT   = "#10B981"
 GRIS   = "#6B7280"
 NOIR   = "#1F2937"
 
+MSG_IP_INVALIDE = "✘  IP invalide : 4 nombres de 0 à 255 séparés par des points"
+
 
 class AppHelha:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("HELHA.net")
-        self.root.geometry("1000x640")
+        self.root.geometry("1000x680")
         # E1 : fenêtre redimensionnable, ouverte en grand
-        self.root.minsize(900, 560)
+        # (660 px de haut minimum : le menu admin compte 8 entrées depuis B15)
+        self.root.minsize(900, 660)
         try:
             self.root.state("zoomed")
         except tk.TclError:
@@ -343,7 +346,9 @@ class AppHelha:
             self.boutons_nav[label] = b
 
         nav("Tableau CIDR",          self._ouvrir_cidr)
-        nav("Analyse IP",            self._ouvrir_analyse_ip)
+        nav("Format IP",             self._ouvrir_format_ip)
+        nav("Classe IP",             self._ouvrir_classe_ip)
+        nav("Masque de classe",      self._ouvrir_masque_classe)
         nav("Réseau / Sous-réseau",  self._ouvrir_classfull)
         nav("Même réseau ?",         self._ouvrir_meme_reseau)
         nav("Découpe en sous-réseaux", self._ouvrir_decoupe)
@@ -383,10 +388,16 @@ class AppHelha:
             tab.insert("", "end", values=row)
 
 
-    #  OUTILS 2, 3, 4 — FORMAT, CLASSE ET MASQUE DE CLASSE D'UNE IP
-    def _ouvrir_analyse_ip(self):
+    #  OUTILS 2, 3, 4 — un écran par fonctionnalité, comme le demande l'énoncé
+    #  (avant : un seul écran « Analyse IP » qui enregistrait dans les 3 tables à chaque clic)
+    def _ecran_ip(self, titre, analyser, verifier_format=True):
+        """
+        Écran commun à F2, F3 et F4 : un champ IP, un bouton, une zone de résultat.
+        analyser(ip, lbl_status, resultat) enregistre la saisie et affiche le résultat.
+        Avec verifier_format=True, une IP mal formée est refusée avant l'appel.
+        """
         self._clear_zone()
-        self._titre("Analyse IP")
+        self._titre(titre)
 
         f, ent = self._champ(self.zone, width=30)
         f.pack(anchor="w", pady=(0, 2))
@@ -394,41 +405,72 @@ class AppHelha:
                  font=("Segoe UI", 9, "italic")).pack(anchor="w", pady=(0, 10))
 
         lbl_status = tk.Label(self.zone, text="", bg=FOND, font=("Segoe UI", 12, "bold"))
-        lbl_status.pack(anchor="w")
-        det = tk.Frame(self.zone, bg=FOND); det.pack(anchor="w", pady=8)
-        lignes = [tk.Label(det, text="", bg=FOND, font=("Segoe UI", 11)) for _ in range(5)]
-        for l in lignes:
-            l.pack(anchor="w", pady=2)
-        lbl_c, lbl_m, lbl_p, lbl_r, lbl_role = lignes
+        resultat = tk.Frame(self.zone, bg=FOND)
 
         def check():
+            for w in resultat.winfo_children():
+                w.destroy()
+            lbl_status.config(text="")
             ip = ent.get().strip()
-            for l in lignes: l.config(text="", fg=NOIR)
             if not ip:
                 lbl_status.config(text="Saisissez une adresse IP.", fg=ROUGE); return
-            bd.inserer("verification_ip", self.user_numero, ip_saisie=ip)
-            if not application.verifier_format_ip(ip):
-                lbl_status.config(text="✘  IP invalide : 4 nombres de 0 à 255 séparés par des points",
-                                  fg=ROUGE); return
-            bd.inserer("classe_ip", self.user_numero, ip=ip)
-            bd.inserer("masque_classe", self.user_numero, ip=ip)
-            lbl_status.config(text="✔  IP valide", fg=VERT)
-            classe, masque = application.definir_classe(ip)
-            lbl_c.config(text=f"• Classe           : {classe}")
-            lbl_m.config(text=f"• Masque de classe : {masque}")
-            type_ip = application.type_adresse(ip)
-            couleur = {"Adresse Privée": "#D97706", "Adresse Publique": "#2563EB"}.get(type_ip, GRIS)
-            lbl_p.config(text=f"• Type             : {type_ip}", fg=couleur)
-            reservee, type_res = application.is_ip_reservee(ip)
-            lbl_r.config(text=f"• Usage particulier : {'Oui — ' + type_res if reservee else 'Non'}",
-                         fg=ROUGE if reservee else "#4B5563")
-            role = application.role_avec_masque_classe(ip)
-            if role:
-                lbl_role.config(text=f"• Avec le masque de classe : {role}")
+            if verifier_format and not application.verifier_format_ip(ip):
+                lbl_status.config(text=MSG_IP_INVALIDE, fg=ROUGE); return
+            analyser(ip, lbl_status, resultat)
 
-        self._btn(self.zone, "Analyser", check).pack(anchor="w", pady=(4, 0), ipadx=20, ipady=6)
+        self._btn(self.zone, "Analyser", check).pack(anchor="w", pady=(4, 10), ipadx=20, ipady=6)
+        lbl_status.pack(anchor="w")
+        resultat.pack(anchor="w", pady=8)
         ent.bind("<Return>", lambda e: check())
         ent.focus_set()
+
+    @staticmethod
+    def _lignes_couleur(parent, lignes):
+        """Affiche une liste (texte, couleur), une ligne par élément."""
+        for texte, couleur in lignes:
+            tk.Label(parent, text=texte, bg=FOND, fg=couleur,
+                     font=("Segoe UI", 11)).pack(anchor="w", pady=2)
+
+    #  OUTIL 2 — FORMAT D'UNE IP (la saisie est enregistrée, même invalide)
+    def _ouvrir_format_ip(self):
+        def analyser(ip, lbl_status, resultat):
+            bd.inserer("verification_ip", self.user_numero, ip_saisie=ip)
+            if application.verifier_format_ip(ip):
+                lbl_status.config(text="✔  IP valide", fg=VERT)
+            else:
+                lbl_status.config(text=MSG_IP_INVALIDE, fg=ROUGE)
+        self._ecran_ip("Format d'une adresse IP", analyser, verifier_format=False)
+
+    #  OUTIL 3 — CLASSE D'UNE IP (privée, publique ou usage particulier)
+    def _ouvrir_classe_ip(self):
+        def analyser(ip, lbl_status, resultat):
+            bd.inserer("classe_ip", self.user_numero, ip=ip)
+            type_ip = application.type_adresse(ip)
+            reservee, type_res = application.is_ip_reservee(ip)
+            lignes = [
+                (f"• Classe            : {application.definir_classe(ip)[0]}", NOIR),
+                (f"• Type              : {type_ip}",
+                 {"Adresse Privée": "#D97706", "Adresse Publique": "#2563EB"}.get(type_ip, GRIS)),
+                (f"• Usage particulier : {'Oui — ' + type_res if reservee else 'Non'}",
+                 ROUGE if reservee else "#4B5563"),
+            ]
+            role = application.role_avec_masque_classe(ip)
+            if role:
+                lignes.append((f"• Avec le masque de classe : {role}", NOIR))
+            self._lignes_couleur(resultat, lignes)
+        self._ecran_ip("Classe d'une adresse IP", analyser)
+
+    #  OUTIL 4 — MASQUE DE CLASSE D'UNE IP
+    def _ouvrir_masque_classe(self):
+        def analyser(ip, lbl_status, resultat):
+            bd.inserer("masque_classe", self.user_numero, ip=ip)
+            classe, masque = application.definir_classe(ip)
+            prefixe = application.prefixe_classe(ip)
+            self._lignes_couleur(resultat, [
+                (f"• Masque de classe : {masque}" + (f"  (/{prefixe})" if prefixe else ""), NOIR),
+                (f"• Classe           : {classe}", GRIS),
+            ])
+        self._ecran_ip("Masque de classe d'une adresse IP", analyser)
 
     def _historique(self, table, colonnes, recharger):
         """

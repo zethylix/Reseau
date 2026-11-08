@@ -18,7 +18,7 @@ Remise : 11 novembre 2026.
 
 ## 2. Bugs, fonctionnements inadaptés et corrections
 
-Les points B1 à B6 ont été validés par le client. Les autres ont été trouvés en relisant le code. Tous sont corrigés par de petites modifications, sans toucher à la structure (mêmes fichiers, mêmes fonctions).
+Les points B1 à B6 ont été validés par le client. Les autres ont été trouvés en relisant le code et l'énoncé. Tous sont corrigés par de petites modifications, sans toucher à la structure (mêmes fichiers, mêmes fonctions ; seul B15 découpe un écran en trois, dans la même classe).
 
 | ID | Constat | Correction |
 |---|---|---|
@@ -36,6 +36,7 @@ Les points B1 à B6 ont été validés par le client. Les autres ont été trouv
 | B12 | Le mot de passe de l'admin initial n'avait aucune règle (1 caractère suffisait). Les autres mots de passe : 6 caractères. | Règle commune : 8 caractères minimum, sans espace, avec majuscule, minuscule, chiffre et caractère spécial. |
 | B13 | Un `;` dans un nom d'utilisateur corrompait `DB.txt`, et une coupure pendant l'écriture pouvait vider le fichier. | Disparaît avec SQLite (requêtes paramétrées, transactions). |
 | B14 | Un nom tapé avec des espaces au début ou à la fin faisait échouer la connexion. | Les espaces autour sont supprimés. |
+| B15 | Les fonctionnalités 2, 3 et 4 étaient regroupées dans un seul écran « Analyse IP », alors que l'énoncé demande un menu de 6 fonctionnalités. Chaque analyse était aussi enregistrée dans les 3 tables, même quand on voulait seulement vérifier le format. | Trois entrées dans le menu : « Format IP » (F2), « Classe IP » (F3) et « Masque de classe » (F4). Chaque écran n'enregistre que dans sa propre table et réutilise les calculs existants. |
 
 **Risque restant, accepté et documenté** : si `helhanet.db` est supprimé, l'application repasse en mode « premier lancement » et propose de créer un nouvel admin. Pour s'en protéger, il faut sauvegarder le fichier et limiter les droits Windows sur le dossier.
 
@@ -130,7 +131,7 @@ python interface.py
 
 1. **Premier lancement** : créer le compte administrateur (nom, numéro d'employé, mot de passe fort).
 2. **Créer les comptes** : menu **Utilisateurs**, puis **+ Créer**. Un mot de passe temporaire s'affiche une seule fois ; l'utilisateur le changera à sa première connexion.
-3. **Utiliser les outils** : Tableau CIDR (F1), Analyse IP (F2 à F4), Réseau / Sous-réseau (F5), Même réseau ? (F6), Découpe en sous-réseaux.
+3. **Utiliser les outils** : Tableau CIDR (F1), Format IP (F2), Classe IP (F3), Masque de classe (F4), Réseau / Sous-réseau (F5), Même réseau ? (F6), Découpe en sous-réseaux.
 4. **Lancer les tests automatiques** (20 tests : cas T01 à T20 de la fiche, bugs, découpe, base) avec la commande ci-dessous.
 
 ```bash
