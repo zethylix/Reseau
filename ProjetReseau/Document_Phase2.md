@@ -41,6 +41,10 @@ Les points B1 à B6 ont été validés par le client. Les autres ont été trouv
 
 **Risque restant, accepté et documenté** : si `helhanet.db` est supprimé, l'application repasse en mode « premier lancement » et propose de créer un nouvel admin. Pour s'en protéger, il faut sauvegarder le fichier et limiter les droits Windows sur le dossier.
 
+**Constats examinés mais non retenus** :
+- *Deux utilisateurs peuvent avoir le même mot de passe.* C'est normal et sans danger : chaque hash bcrypt a son propre sel, donc deux mots de passe identiques donnent deux hash différents. L'interdire créerait une faille, car le message « mot de passe déjà utilisé » révélerait qu'un autre compte utilise ce mot de passe.
+- *Pas de « super admin » : deux administrateurs peuvent se retirer le rôle l'un à l'autre.* L'énoncé ne prévoit que les rôles admin et utilisateur, et l'application refuse déjà de retirer le dernier administrateur actif. Limite connue : chaque administrateur a tous les droits, donc un administrateur seul pourrait créer un second compte admin et confirmer lui-même le bouton de sécurité. Un rôle « super admin » pourra être proposé au client dans une version suivante.
+
 ---
 
 ## 3. Propositions ergonomiques (acceptées et implémentées)
@@ -90,20 +94,7 @@ Il se trouve dans **Utilisateurs**, bouton rouge « Sécurité : forcer le chang
 
 ## 7. Schéma relationnel de la base (SQLite 3, fichier `helhanet.db`)
 
-```mermaid
-erDiagram
-    utilisateur ||--o{ utilisateur : "cree_par / modifie_par"
-    utilisateur ||--o{ demande_reinit_mdp : "demande_par / confirme_par"
-    utilisateur ||--o{ tableau_cidr : cree_par
-    tableau_cidr ||--|{ ligne_tableau_cidr : contient
-    utilisateur ||--o{ verification_ip : cree_par
-    utilisateur ||--o{ classe_ip : cree_par
-    utilisateur ||--o{ masque_classe : cree_par
-    utilisateur ||--o{ reseau_classfull : "cree_par / modifie_par"
-    utilisateur ||--o{ comparaison_ip : "cree_par / modifie_par"
-    utilisateur ||--o{ decoupe : cree_par
-    decoupe ||--|{ sous_reseau : contient
-```
+![Schéma relationnel de la base helhanet.db](schema_relationnel.svg)
 
 Notation : PK = clé primaire, FK = clé étrangère, toutes vers `utilisateur(numero_employe)` sauf indication contraire.
 
@@ -130,7 +121,9 @@ pip install -r requirements.txt
 python interface.py
 ```
 
-1. **Premier lancement** : créer le compte administrateur (nom, numéro d'employé, mot de passe fort).
+Le mode d'emploi complet se trouve aussi dans `projet/README.md`.
+
+1. **Premier lancement** : aucune base n'est livrée. L'application crée `helhanet.db` et demande de créer le compte administrateur (nom, numéro d'employé, mot de passe fort).
 2. **Créer les comptes** : menu **Utilisateurs**, puis **+ Créer**. Un mot de passe temporaire s'affiche une seule fois ; l'utilisateur le changera à sa première connexion.
 3. **Utiliser les outils** : Tableau CIDR (F1), Format IP (F2), Classe IP (F3), Masque de classe (F4), Réseau / Sous-réseau (F5), Même réseau ? (F6), Découpe en sous-réseaux.
 4. **Lancer les tests automatiques** (21 tests : cas T01 à T20 de la fiche, bugs, droits des administrateurs, découpe, base) avec la commande ci-dessous.
