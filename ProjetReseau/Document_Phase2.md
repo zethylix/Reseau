@@ -73,7 +73,7 @@ Tous les calculs se font à la main (opérations sur les bits), **sans biblioth�
 - Chaque compte reçoit un numéro d'employé unique, qui sert de clé primaire à la table `utilisateur`.
 - Toute ligne ajoutée dans la base porte `cree_par`, le numéro d'employé de la personne connectée, ainsi que la date.
 - Toute modification d'un compte (rôle, activation, mot de passe) porte `modifie_par` et `modifie_le`.
-- Pour F5 et F6, on garde aussi le **dernier employé ayant modifié l'enregistrement**. Ces enregistrements peuvent être rechargés depuis l'historique affiché sous le formulaire, puis modifiés.
+- Pour F5 et F6, on garde aussi le **dernier employé ayant modifié l'enregistrement**. Ces enregistrements peuvent être rechargés depuis l'historique affiché sous le formulaire, puis modifiés. Une modification n'écrase rien : elle **ajoute une nouvelle version** qui garde le créateur d'origine (`cree_par`), porte le numéro de l'employé qui modifie (`modifie_par`, `modifie_le`) et l'id de la ligne remplacée (`modifie_depuis`). L'historique complet reste donc consultable.
 - Ces colonnes sont des clés étrangères vers `utilisateur(numero_employe)`, donc un numéro inexistant est refusé par la base.
 
 ---
@@ -105,8 +105,8 @@ Notation : PK = clé primaire, FK = clé étrangère, toutes vers `utilisateur(n
 - **verification_ip** — F2 (<u>id</u>, ip_saisie, cree_par FK, cree_le)
 - **classe_ip** — F3 (<u>id</u>, ip, cree_par FK, cree_le)
 - **masque_classe** — F4 (<u>id</u>, ip, cree_par FK, cree_le)
-- **reseau_classfull** — F5 (<u>id</u>, ip, masque, cree_par FK, cree_le, modifie_par FK, modifie_le)
-- **comparaison_ip** — F6 (<u>id</u>, ip1, masque1, ip2, masque2, cree_par FK, cree_le, modifie_par FK, modifie_le)
+- **reseau_classfull** — F5 (<u>id</u>, ip, masque, cree_par FK, cree_le, modifie_par FK, modifie_le, modifie_depuis FK → reseau_classfull)
+- **comparaison_ip** — F6 (<u>id</u>, ip1, masque1, ip2, masque2, cree_par FK, cree_le, modifie_par FK, modifie_le, modifie_depuis FK → comparaison_ip)
 - **decoupe** (<u>id</u>, ip, masque, nb_sr_demandes, nouveau_masque, cree_par FK, cree_le)
 - **sous_reseau** (<u>id_decoupe</u> FK → decoupe, <u>numero</u>, adresse_reseau, premiere_hote, derniere_hote, broadcast)
 

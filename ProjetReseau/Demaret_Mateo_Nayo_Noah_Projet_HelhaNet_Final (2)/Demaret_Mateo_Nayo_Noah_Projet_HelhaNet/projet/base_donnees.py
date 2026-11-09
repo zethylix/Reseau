@@ -4,7 +4,8 @@ Règles du client :
 - Chaque ligne garde le numéro de l'employé qui l'a créée (cree_par).
 - F1 (tableau CIDR) : on garde aussi le résultat (ligne_tableau_cidr).
 - F2 à F6 : on garde seulement les saisies, les résultats se recalculent.
-- F5 et F6 : on garde aussi le dernier employé qui a modifié la ligne (modifie_par).
+- F5 et F6 : une modification ajoute une nouvelle version (modifie_par, modifie_depuis) ;
+  l'ancienne ligne n'est jamais écrasée.
 - Les découpes en sous-réseaux sont stockées avec leurs sous-réseaux.
 """
 import os
@@ -76,28 +77,31 @@ CREATE TABLE IF NOT EXISTS masque_classe (
     cree_le  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- F5 : réseau et sous-réseau (classful) — modifiable
+-- F5 : réseau et sous-réseau (classful) — modifiable par versions
+-- modifie_depuis = id de la ligne remplacée (NULL pour une saisie d'origine)
 CREATE TABLE IF NOT EXISTS reseau_classfull (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    ip          TEXT NOT NULL,
-    masque      TEXT NOT NULL,
-    cree_par    TEXT NOT NULL REFERENCES utilisateur(numero_employe),
-    cree_le     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    modifie_par TEXT REFERENCES utilisateur(numero_employe),
-    modifie_le  TEXT
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip             TEXT NOT NULL,
+    masque         TEXT NOT NULL,
+    cree_par       TEXT NOT NULL REFERENCES utilisateur(numero_employe),
+    cree_le        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modifie_par    TEXT REFERENCES utilisateur(numero_employe),
+    modifie_le     TEXT,
+    modifie_depuis INTEGER REFERENCES reseau_classfull(id)
 );
 
--- F6 : deux IP dans le même réseau ? — modifiable
+-- F6 : deux IP dans le même réseau ? — modifiable par versions
 CREATE TABLE IF NOT EXISTS comparaison_ip (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    ip1         TEXT NOT NULL,
-    masque1     TEXT NOT NULL,
-    ip2         TEXT NOT NULL,
-    masque2     TEXT NOT NULL,
-    cree_par    TEXT NOT NULL REFERENCES utilisateur(numero_employe),
-    cree_le     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    modifie_par TEXT REFERENCES utilisateur(numero_employe),
-    modifie_le  TEXT
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip1            TEXT NOT NULL,
+    masque1        TEXT NOT NULL,
+    ip2            TEXT NOT NULL,
+    masque2        TEXT NOT NULL,
+    cree_par       TEXT NOT NULL REFERENCES utilisateur(numero_employe),
+    cree_le        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modifie_par    TEXT REFERENCES utilisateur(numero_employe),
+    modifie_le     TEXT,
+    modifie_depuis INTEGER REFERENCES comparaison_ip(id)
 );
 
 -- Nouvelle fonctionnalité : découpe selon le nombre de sous-réseaux
@@ -153,15 +157,23 @@ def inserer(table: str, numero_employe: str, **valeurs) -> int:
         return cur.lastrowid
 
 
-def modifier(table: str, id_ligne: int, numero_employe: str, **valeurs) -> bool:
-    """Modifie une ligne de F5/F6 et retient qui l'a modifiée en dernier."""
+def modifier(table: str, id_ligne: int, numero_employe: str, **valeurs):
+    """
+    Modifie une ligne de F5/F6 en ajoutant une NOUVELLE version : l'ancienne reste
+    intacte. La nouvelle ligne garde le créateur d'origine, porte le numéro de
+    l'employé qui modifie et l'id de la ligne remplacée. Retourne son id (None si
+    la ligne d'origine n'existe pas).
+    """
     assert table in TABLES_MODIFIABLES
-    affectations = ", ".join(f"{c} = ?" for c in valeurs)
     with ouvrir() as con:
-        cur = con.execute(
-            f"UPDATE {table} SET {affectations}, modifie_par = ?, modifie_le = CURRENT_TIMESTAMP "
-            f"WHERE id = ?", (*valeurs.values(), numero_employe, id_ligne))
-        return cur.rowcount == 1
+        origine = con.execute(f"SELECT cree_par FROM {table} WHERE id = ?", (id_ligne,)).fetchone()
+        if origine is None:
+            return None
+        colonnes = ", ".join(list(valeurs) + ["cree_par", "modifie_par", "modifie_le", "modifie_depuis"])
+        marques  = ", ".join(["?"] * (len(valeurs) + 2) + ["CURRENT_TIMESTAMP", "?"])
+        cur = con.execute(f"INSERT INTO {table} ({colonnes}) VALUES ({marques})",
+                          (*valeurs.values(), origine["cree_par"], numero_employe, id_ligne))
+        return cur.lastrowid
 
 
 def lister(table: str, limite: int = 50) -> list:

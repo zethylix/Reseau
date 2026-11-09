@@ -227,17 +227,22 @@ class TestBase(unittest.TestCase):
         bd.inserer("classe_ip", "1001", ip="5.5.5.5")
         bd.inserer("masque_classe", "1001", ip="5.5.5.5")
         id_f5 = bd.inserer("reseau_classfull", "1001", ip="5.5.5.5", masque="255.255.0.0")
-        bd.modifier("reseau_classfull", id_f5, "2002", ip="5.5.5.6", masque="255.255.0.0")
+        id_f5b = bd.modifier("reseau_classfull", id_f5, "2002", ip="5.5.5.6", masque="255.255.0.0")
         id_f6 = bd.inserer("comparaison_ip", "1001", ip1="192.168.1.10", masque1="255.255.255.0",
                            ip2="192.168.1.5", masque2="255.255.255.0")
         bd.modifier("comparaison_ip", id_f6, "2002", ip1="192.168.1.11", masque1="255.255.255.0",
                     ip2="192.168.1.5", masque2="255.255.255.0")
+        self.assertIsNone(bd.modifier("reseau_classfull", 999, "2002", ip="1.1.1.1", masque="255.0.0.0"))
         with bd.ouvrir() as con:
             self.assertEqual(con.execute("SELECT COUNT(*) FROM ligne_tableau_cidr").fetchone()[0], 23)
-            f5 = con.execute("SELECT ip, cree_par, modifie_par FROM reseau_classfull").fetchone()
-            self.assertEqual(tuple(f5), ("5.5.5.6", "1001", "2002"))
-            f6 = con.execute("SELECT cree_par, modifie_par FROM comparaison_ip").fetchone()
-            self.assertEqual(tuple(f6), ("1001", "2002"))
+            # Une modification ajoute une version : l'originale reste intacte
+            f5 = [tuple(r) for r in con.execute(
+                "SELECT id, ip, cree_par, modifie_par, modifie_depuis FROM reseau_classfull ORDER BY id")]
+            self.assertEqual(f5, [(id_f5, "5.5.5.5", "1001", None, None),
+                                  (id_f5b, "5.5.5.6", "1001", "2002", id_f5)])
+            f6 = [tuple(r) for r in con.execute(
+                "SELECT ip1, cree_par, modifie_par FROM comparaison_ip ORDER BY id")]
+            self.assertEqual(f6, [("192.168.1.10", "1001", None), ("192.168.1.11", "1001", "2002")])
         self.assertEqual(bd.lister("reseau_classfull")[0]["modifie_par"], "2002")
 
     def test_decoupe_enregistree(self):

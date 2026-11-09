@@ -562,9 +562,12 @@ class AppHelha:
                 messagebox.showwarning("Sélection", "Cliquez d'abord une ligne de l'historique."); return
             saisie = lire_saisie()
             if saisie:
-                bd.modifier("reseau_classfull", etat["id"], self.user_numero, ip=saisie[0], masque=saisie[1])
+                ancien = etat["id"]
+                etat["id"] = bd.modifier("reseau_classfull", ancien, self.user_numero,
+                                         ip=saisie[0], masque=saisie[1])
                 rafraichir()
-                lbl_err.config(text=f"✔  Enregistrement n° {etat['id']} modifié", fg=VERT)
+                lbl_err.config(text=f"✔  Nouvelle version n° {etat['id']} enregistrée "
+                                    f"(remplace n° {ancien}, conservé)", fg=VERT)
 
         def recharger(ligne):
             for e, v in [(ent_ip, ligne["ip"]), (ent_masque, ligne["masque"])]:
@@ -577,7 +580,7 @@ class AppHelha:
         rafraichir, etat = self._historique("reseau_classfull", [
             ("id", "N°", 50), ("ip", "IP", 130), ("masque", "Masque", 130),
             ("cree_par", "Créé par", 90), ("modifie_par", "Modifié par", 90),
-            ("modifie_le", "Modifié le (UTC)", 150)], recharger)
+            ("modifie_le", "Modifié le (UTC)", 150), ("modifie_depuis", "Remplace n°", 90)], recharger)
         self._valider_avec_entree([ent_ip, ent_masque], calc)
         ent_ip.focus_set()
 
@@ -646,9 +649,11 @@ class AppHelha:
                 messagebox.showwarning("Sélection", "Cliquez d'abord une ligne de l'historique."); return
             saisie = lire_saisie()
             if saisie:
-                bd.modifier("comparaison_ip", etat["id"], self.user_numero, **saisie)
+                ancien = etat["id"]
+                etat["id"] = bd.modifier("comparaison_ip", ancien, self.user_numero, **saisie)
                 rafraichir()
-                messagebox.showinfo("Modification", f"Enregistrement n° {etat['id']} modifié.")
+                messagebox.showinfo("Modification", f"Nouvelle version n° {etat['id']} enregistrée "
+                                                    f"(remplace n° {ancien}, conservé).")
 
         def recharger(ligne):
             for e, cle in zip(entrees, ["ip1", "masque1", "ip2", "masque2"]):
@@ -661,7 +666,8 @@ class AppHelha:
         rafraichir, etat = self._historique("comparaison_ip", [
             ("id", "N°", 45), ("ip1", "IP 1", 115), ("masque1", "Masque 1", 115),
             ("ip2", "IP 2", 115), ("masque2", "Masque 2", 115),
-            ("cree_par", "Créé par", 75), ("modifie_par", "Modifié par", 85)], recharger)
+            ("cree_par", "Créé par", 75), ("modifie_par", "Modifié par", 85),
+            ("modifie_depuis", "Remplace n°", 85)], recharger)
         self._valider_avec_entree(entrees, calc)
         ent_ip1.focus_set()
 
