@@ -3,10 +3,12 @@
 Règles du client :
 - Chaque ligne garde le numéro de l'employé qui l'a créée (cree_par).
 - F1 (tableau CIDR) : on garde aussi le résultat (ligne_tableau_cidr).
-- F2 à F6 : on garde seulement les saisies, les résultats se recalculent.
+- F2 : on garde la saisie et son résultat (valide, booléen 0/1).
+- F3 à F6 : on garde seulement les saisies, les résultats se recalculent.
 - F5 et F6 : une modification ajoute une nouvelle version (modifie_par, modifie_depuis) ;
   l'ancienne ligne n'est jamais écrasée.
-- Les découpes en sous-réseaux sont stockées avec leurs sous-réseaux.
+- Les découpes en sous-réseaux sont stockées avec leurs sous-réseaux, le nombre
+  d'hôtes demandé (facultatif) et le nombre d'hôtes max par sous-réseau.
 """
 import os
 import sqlite3
@@ -53,10 +55,11 @@ CREATE TABLE IF NOT EXISTS ligne_tableau_cidr (
     PRIMARY KEY (id_tableau, prefixe)
 );
 
--- F2 : vérification du format d'une IP (saisie brute, même invalide)
+-- F2 : vérification du format d'une IP (saisie brute, même invalide) et son résultat
 CREATE TABLE IF NOT EXISTS verification_ip (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     ip_saisie TEXT NOT NULL,
+    valide    INTEGER NOT NULL CHECK (valide IN (0, 1)),   -- booléen : 1 = format correct
     cree_par  TEXT NOT NULL REFERENCES utilisateur(numero_employe),
     cree_le   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -106,11 +109,13 @@ CREATE TABLE IF NOT EXISTS comparaison_ip (
 
 -- Nouvelle fonctionnalité : découpe selon le nombre de sous-réseaux
 CREATE TABLE IF NOT EXISTS decoupe (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    ip             TEXT NOT NULL,
-    masque         TEXT NOT NULL,
-    nb_sr_demandes INTEGER NOT NULL,
-    nouveau_masque TEXT NOT NULL,
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip                TEXT NOT NULL,
+    masque            TEXT NOT NULL,
+    nb_sr_demandes    INTEGER NOT NULL,
+    nb_hotes_demandes INTEGER,                 -- facultatif (NULL = pas de contrainte)
+    nouveau_masque    TEXT NOT NULL,
+    hotes_par_sr      INTEGER NOT NULL,        -- nombre d'hôtes max par sous-réseau
     cree_par       TEXT NOT NULL REFERENCES utilisateur(numero_employe),
     cree_le        TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -128,7 +133,7 @@ CREATE TABLE IF NOT EXISTS sous_reseau (
 # Tables qu'on peut remplir avec inserer() / modifier() / lister().
 # Les noms viennent du code, jamais de l'utilisateur.
 TABLES_HISTORIQUE = {"verification_ip", "classe_ip", "masque_classe",
-                     "reseau_classfull", "comparaison_ip"}
+                     "reseau_classfull", "comparaison_ip", "decoupe"}
 TABLES_MODIFIABLES = {"reseau_classfull", "comparaison_ip"}
 
 
@@ -199,11 +204,19 @@ def enregistrer_decoupe(numero_employe: str, ip: str, masque: str, nb_sr: int, r
     """Enregistre une découpe et ses sous-réseaux."""
     with ouvrir() as con:
         id_decoupe = con.execute(
-            "INSERT INTO decoupe (ip, masque, nb_sr_demandes, nouveau_masque, cree_par) "
-            "VALUES (?, ?, ?, ?, ?)",
-            (ip, masque, nb_sr, resultat["nouveau_masque"], numero_employe)).lastrowid
+            "INSERT INTO decoupe (ip, masque, nb_sr_demandes, nb_hotes_demandes, nouveau_masque, "
+            "hotes_par_sr, cree_par) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (ip, masque, nb_sr, resultat["nb_hotes_demandes"], resultat["nouveau_masque"],
+             resultat["hotes_par_sr"], numero_employe)).lastrowid
         con.executemany(
             "INSERT INTO sous_reseau VALUES (?, ?, ?, ?, ?, ?)",
             [(id_decoupe, sr["numero"], sr["reseau"], sr["premiere_hote"], sr["derniere_hote"], sr["broadcast"])
              for sr in resultat["sous_reseaux"]])
         return id_decoupe
+
+
+def sous_reseaux(id_decoupe: int) -> list:
+    """Sous-réseaux enregistrés d'une découpe (pour la recharger depuis l'historique)."""
+    with ouvrir() as con:
+        return [dict(r) for r in con.execute(
+            "SELECT * FROM sous_reseau WHERE id_decoupe = ? ORDER BY numero", (id_decoupe,))]

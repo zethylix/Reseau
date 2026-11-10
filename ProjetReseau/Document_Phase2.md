@@ -57,13 +57,13 @@ Les points B1 à B6 ont été validés par le client. Les autres ont été trouv
 
 ## 4. Nouvelle fonctionnalité : découpe en sous-réseaux
 
-Menu **Découpe en sous-réseaux**. On saisit un réseau, un masque (s'il est vide, on prend le masque de classe) et le nombre de sous-réseaux voulu N.
+Menu **Découpe en sous-réseaux**. On saisit un réseau, un masque (s'il est vide, on prend le masque de classe), le nombre de sous-réseaux voulu N et, si on le souhaite, le nombre d'hôtes voulu par sous-réseau. Si ce dernier champ est vide, la découpe se fait uniquement sur base de N.
 
 1. On emprunte *n* bits à la partie hôte, avec le plus petit *n* tel que 2ⁿ ≥ N.
 2. Le nouveau masque vaut /(masque + n). On refuse si on dépasse /30, car il resterait moins de 2 hôtes par sous-réseau.
 3. Pour chacun des N sous-réseaux, on affiche l'adresse réseau, le premier hôte, le dernier hôte et le broadcast.
 
-Tous les calculs se font à la main (opérations sur les bits), **sans bibliothèque IP**, comme l'exige l'énoncé. La découpe et ses sous-réseaux sont enregistrés en base (tables `decoupe` et `sous_reseau`).
+Tous les calculs se font à la main (opérations sur les bits), **sans bibliothèque IP**, comme l'exige l'énoncé. Si un nombre d'hôtes est demandé, on vérifie que chaque sous-réseau peut en contenir autant ; sinon la découpe est refusée avec le maximum possible. L'écran affiche le **nombre d'hôtes max par sous-réseau**. La découpe et ses sous-réseaux sont enregistrés en base (tables `decoupe` et `sous_reseau`), et un **historique** sous le formulaire permet de recharger une découpe et ses sous-réseaux.
 
 ---
 
@@ -73,8 +73,9 @@ Tous les calculs se font à la main (opérations sur les bits), **sans biblioth�
 - Chaque compte reçoit un numéro d'employé unique, qui sert de clé primaire à la table `utilisateur`.
 - Toute ligne ajoutée dans la base porte `cree_par`, le numéro d'employé de la personne connectée, ainsi que la date.
 - Toute modification d'un compte (rôle, activation, mot de passe) porte `modifie_par` et `modifie_le`.
-- Pour F5 et F6, on garde aussi le **dernier employé ayant modifié l'enregistrement**. Ces enregistrements peuvent être rechargés depuis l'historique affiché sous le formulaire, puis modifiés. Une modification n'écrase rien : elle **ajoute une nouvelle version** qui garde le créateur d'origine (`cree_par`), porte le numéro de l'employé qui modifie (`modifie_par`, `modifie_le`) et l'id de la ligne remplacée (`modifie_depuis`). L'historique complet reste donc consultable.
+- Pour F5 et F6, la base prévoit le **dernier employé ayant modifié l'enregistrement**. L'écran F5 n'affiche pas d'historique : chaque calcul est simplement enregistré. Les enregistrements F6 peuvent être rechargés depuis l'historique affiché sous le formulaire, puis modifiés. Une modification n'écrase rien : elle **ajoute une nouvelle version** qui garde le créateur d'origine (`cree_par`), porte le numéro de l'employé qui modifie (`modifie_par`, `modifie_le`) et l'id de la ligne remplacée (`modifie_depuis`). L'historique complet reste donc consultable.
 - Ces colonnes sont des clés étrangères vers `utilisateur(numero_employe)`, donc un numéro inexistant est refusé par la base.
+- Les dates sont **stockées en UTC**, pour garder un ordre fiable des modifications même lors du changement d'heure. L'historique les **affiche en heure belge avec le décalage précisé** : « 2026-11-09 11:05:00 (UTC+1) » en hiver, « (UTC+2) » en été.
 
 ---
 
@@ -102,15 +103,15 @@ Notation : PK = clé primaire, FK = clé étrangère, toutes vers `utilisateur(n
 - **demande_reinit_mdp** (<u>id</u>, demande_par FK, demande_le, confirme_par FK, confirme_le)
 - **tableau_cidr** — F1 (<u>id</u>, cree_par FK, cree_le)
 - **ligne_tableau_cidr** — F1, résultat stocké (<u>id_tableau</u> FK → tableau_cidr, <u>prefixe</u>, masque_binaire, masque_decimal)
-- **verification_ip** — F2 (<u>id</u>, ip_saisie, cree_par FK, cree_le)
+- **verification_ip** — F2 (<u>id</u>, ip_saisie, valide (booléen 0/1), cree_par FK, cree_le)
 - **classe_ip** — F3 (<u>id</u>, ip, cree_par FK, cree_le)
 - **masque_classe** — F4 (<u>id</u>, ip, cree_par FK, cree_le)
 - **reseau_classfull** — F5 (<u>id</u>, ip, masque, cree_par FK, cree_le, modifie_par FK, modifie_le, modifie_depuis FK → reseau_classfull)
 - **comparaison_ip** — F6 (<u>id</u>, ip1, masque1, ip2, masque2, cree_par FK, cree_le, modifie_par FK, modifie_le, modifie_depuis FK → comparaison_ip)
-- **decoupe** (<u>id</u>, ip, masque, nb_sr_demandes, nouveau_masque, cree_par FK, cree_le)
+- **decoupe** (<u>id</u>, ip, masque, nb_sr_demandes, nb_hotes_demandes (facultatif), nouveau_masque, hotes_par_sr, cree_par FK, cree_le)
 - **sous_reseau** (<u>id_decoupe</u> FK → decoupe, <u>numero</u>, adresse_reseau, premiere_hote, derniere_hote, broadcast)
 
-Conformément aux consignes : F1 stocke son résultat ; F2 à F6 ne stockent que les saisies, car les résultats se recalculent ; seuls F5 et F6 ont un « dernier modificateur ».
+Stockage : F1 stocke son résultat ; F2 stocke sa saisie et son résultat (`valide`, booléen) ; F3 à F6 ne stockent que les saisies, car les résultats se recalculent ; la découpe stocke ses sous-réseaux ; seuls F5 et F6 ont un « dernier modificateur ».
 
 ---
 

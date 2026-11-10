@@ -1,22 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 717" width="860" height="717" font-family="Segoe UI, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 735" width="860" height="735" font-family="Segoe UI, Arial, sans-serif">
 <style>.titre{font-size:13px;font-weight:700;fill:#fff} .tag{font-size:10.5px;fill:#C7D5F7} .col{font-size:12.5px;fill:#1F2937} .pk{font-size:12.5px;fill:#1F2937;font-weight:700;text-decoration:underline} .fk{font-size:12.5px;fill:#1F2937;font-style:italic} .marque{font-size:10px;fill:#6B7280;font-weight:600} .trait{stroke:#64748B;stroke-width:1.3;fill:none} .legende{font-size:11.5px;fill:#6B7280}</style>
 <defs><marker id="fleche" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748B"/></marker></defs>
-<rect width="860" height="717" fill="#fff"/>
-<line x1="270.0" y1="62.0" x2="270.0" y2="624.0" class="trait"/>
+<rect width="860" height="735" fill="#fff"/>
+<line x1="270.0" y1="62.0" x2="270.0" y2="642" class="trait"/>
 <line x1="206" y1="62.0" x2="270.0" y2="62.0" class="trait"/>
 <circle cx="270.0" cy="62.0" r="2.4" fill="#64748B"/>
 <line x1="206" y1="98.0" x2="270.0" y2="98.0" class="trait"/>
 <circle cx="270.0" cy="98.0" r="2.4" fill="#64748B"/>
 <line x1="206" y1="216.0" x2="270.0" y2="216.0" class="trait"/>
 <circle cx="270.0" cy="216.0" r="2.4" fill="#64748B"/>
-<line x1="206" y1="334.0" x2="270.0" y2="334.0" class="trait"/>
-<circle cx="270.0" cy="334.0" r="2.4" fill="#64748B"/>
-<line x1="206" y1="452.0" x2="270.0" y2="452.0" class="trait"/>
-<circle cx="270.0" cy="452.0" r="2.4" fill="#64748B"/>
-<line x1="206" y1="588.0" x2="270.0" y2="588.0" class="trait"/>
-<circle cx="270.0" cy="588.0" r="2.4" fill="#64748B"/>
-<line x1="206" y1="624.0" x2="270.0" y2="624.0" class="trait"/>
-<circle cx="270.0" cy="624.0" r="2.4" fill="#64748B"/>
+<line x1="206" y1="352" x2="270.0" y2="352" class="trait"/>
+<circle cx="270.0" cy="352" r="2.4" fill="#64748B"/>
+<line x1="206" y1="470" x2="270.0" y2="470" class="trait"/>
+<circle cx="270.0" cy="470" r="2.4" fill="#64748B"/>
+<line x1="206" y1="606" x2="270.0" y2="606" class="trait"/>
+<circle cx="270.0" cy="606" r="2.4" fill="#64748B"/>
+<line x1="206" y1="642" x2="270.0" y2="642" class="trait"/>
+<circle cx="270.0" cy="642" r="2.4" fill="#64748B"/>
 <line x1="334" y1="544.0" x2="270.0" y2="544.0" class="trait"/>
 <circle cx="270.0" cy="544.0" r="2.4" fill="#64748B"/>
 <line x1="334" y1="580.0" x2="270.0" y2="580.0" class="trait"/>
@@ -33,7 +33,7 @@
 <circle cx="592.0" cy="288.0" r="2.4" fill="#64748B"/>
 <line x1="592.0" y1="144.0" x2="530" y2="144.0" class="trait" marker-end="url(#fleche)"/>
 <line x1="752.0" y1="166" x2="752.0" y2="124" class="trait" marker-end="url(#fleche)"/>
-<line x1="752.0" y1="518" x2="752.0" y2="476" class="trait" marker-end="url(#fleche)"/>
+<line x1="752.0" y1="554" x2="752.0" y2="512" class="trait" marker-end="url(#fleche)"/>
 <g><rect x="10" y="10" width="196" height="119" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
 <path d="M10,34 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
 <text x="19" y="26.5" class="titre">demande_reinit_mdp</text>
@@ -49,7 +49,7 @@
 <text x="198" y="101" class="marque" text-anchor="end">FK</text>
 <text x="20" y="119" class="col">confirme_le</text>
 </g>
-<g><rect x="10" y="146" width="196" height="101" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
+<g><rect x="10" y="146" width="196" height="119" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
 <path d="M10,170 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
 <text x="19" y="162.5" class="titre">verification_ip</text>
 <text x="198" y="162" class="tag" text-anchor="end">F2</text>
@@ -61,53 +61,54 @@
 <text x="198" y="219" class="marque" text-anchor="end">FK</text>
 <rect x="11" y="224" width="194" height="18" fill="#F3F6FD"/>
 <text x="20" y="237" class="col">cree_le</text>
+<text x="20" y="255" class="col">valide (booléen)</text>
 </g>
-<g><rect x="10" y="264" width="196" height="101" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
-<path d="M10,288 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
-<text x="19" y="280.5" class="titre">classe_ip</text>
-<text x="198" y="280" class="tag" text-anchor="end">F3</text>
-<text x="20" y="301" class="pk">id</text>
-<text x="198" y="301" class="marque" text-anchor="end">PK</text>
-<rect x="11" y="306" width="194" height="18" fill="#F3F6FD"/>
-<text x="20" y="319" class="col">ip</text>
-<text x="20" y="337" class="fk">cree_par</text>
-<text x="198" y="337" class="marque" text-anchor="end">FK</text>
-<rect x="11" y="342" width="194" height="18" fill="#F3F6FD"/>
-<text x="20" y="355" class="col">cree_le</text>
+<g><rect x="10" y="282" width="196" height="101" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
+<path d="M10,306 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
+<text x="19" y="298.5" class="titre">classe_ip</text>
+<text x="198" y="298" class="tag" text-anchor="end">F3</text>
+<text x="20" y="319" class="pk">id</text>
+<text x="198" y="319" class="marque" text-anchor="end">PK</text>
+<rect x="11" y="324" width="194" height="18" fill="#F3F6FD"/>
+<text x="20" y="337" class="col">ip</text>
+<text x="20" y="355" class="fk">cree_par</text>
+<text x="198" y="355" class="marque" text-anchor="end">FK</text>
+<rect x="11" y="360" width="194" height="18" fill="#F3F6FD"/>
+<text x="20" y="373" class="col">cree_le</text>
 </g>
-<g><rect x="10" y="382" width="196" height="101" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
-<path d="M10,406 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
-<text x="19" y="398.5" class="titre">masque_classe</text>
-<text x="198" y="398" class="tag" text-anchor="end">F4</text>
-<text x="20" y="419" class="pk">id</text>
-<text x="198" y="419" class="marque" text-anchor="end">PK</text>
-<rect x="11" y="424" width="194" height="18" fill="#F3F6FD"/>
-<text x="20" y="437" class="col">ip</text>
-<text x="20" y="455" class="fk">cree_par</text>
-<text x="198" y="455" class="marque" text-anchor="end">FK</text>
-<rect x="11" y="460" width="194" height="18" fill="#F3F6FD"/>
-<text x="20" y="473" class="col">cree_le</text>
+<g><rect x="10" y="400" width="196" height="101" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
+<path d="M10,424 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
+<text x="19" y="416.5" class="titre">masque_classe</text>
+<text x="198" y="416" class="tag" text-anchor="end">F4</text>
+<text x="20" y="437" class="pk">id</text>
+<text x="198" y="437" class="marque" text-anchor="end">PK</text>
+<rect x="11" y="442" width="194" height="18" fill="#F3F6FD"/>
+<text x="20" y="455" class="col">ip</text>
+<text x="20" y="473" class="fk">cree_par</text>
+<text x="198" y="473" class="marque" text-anchor="end">FK</text>
+<rect x="11" y="478" width="194" height="18" fill="#F3F6FD"/>
+<text x="20" y="491" class="col">cree_le</text>
 </g>
-<g><rect x="10" y="500" width="196" height="173" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
-<path d="M10,524 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
-<text x="19" y="516.5" class="titre">reseau_classfull</text>
-<text x="198" y="516" class="tag" text-anchor="end">F5</text>
-<text x="20" y="537" class="pk">id</text>
-<text x="198" y="537" class="marque" text-anchor="end">PK</text>
-<rect x="11" y="542" width="194" height="18" fill="#F3F6FD"/>
-<text x="20" y="555" class="col">ip</text>
-<text x="20" y="573" class="col">masque</text>
-<rect x="11" y="578" width="194" height="18" fill="#F3F6FD"/>
-<text x="20" y="591" class="fk">cree_par</text>
-<text x="198" y="591" class="marque" text-anchor="end">FK</text>
-<text x="20" y="609" class="col">cree_le</text>
-<rect x="11" y="614" width="194" height="18" fill="#F3F6FD"/>
-<text x="20" y="627" class="fk">modifie_par</text>
-<text x="198" y="627" class="marque" text-anchor="end">FK</text>
-<text x="20" y="645" class="col">modifie_le</text>
-<rect x="11" y="650" width="194" height="18" fill="#F3F6FD"/>
-<text x="20" y="663" class="fk">modifie_depuis</text>
-<text x="198" y="663" class="marque" text-anchor="end">FK ↺</text>
+<g><rect x="10" y="518" width="196" height="173" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
+<path d="M10,542 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
+<text x="19" y="534.5" class="titre">reseau_classfull</text>
+<text x="198" y="534" class="tag" text-anchor="end">F5</text>
+<text x="20" y="555" class="pk">id</text>
+<text x="198" y="555" class="marque" text-anchor="end">PK</text>
+<rect x="11" y="560" width="194" height="18" fill="#F3F6FD"/>
+<text x="20" y="573" class="col">ip</text>
+<text x="20" y="591" class="col">masque</text>
+<rect x="11" y="596" width="194" height="18" fill="#F3F6FD"/>
+<text x="20" y="609" class="fk">cree_par</text>
+<text x="198" y="609" class="marque" text-anchor="end">FK</text>
+<text x="20" y="627" class="col">cree_le</text>
+<rect x="11" y="632" width="194" height="18" fill="#F3F6FD"/>
+<text x="20" y="645" class="fk">modifie_par</text>
+<text x="198" y="645" class="marque" text-anchor="end">FK</text>
+<text x="20" y="663" class="col">modifie_le</text>
+<rect x="11" y="668" width="194" height="18" fill="#F3F6FD"/>
+<text x="20" y="681" class="fk">modifie_depuis</text>
+<text x="198" y="681" class="marque" text-anchor="end">FK ↺</text>
 </g>
 <g><rect x="334" y="110" width="196" height="209" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
 <path d="M334,134 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
@@ -181,7 +182,7 @@
 <rect x="655" y="244" width="194" height="18" fill="#F3F6FD"/>
 <text x="664" y="257" class="col">masque_decimal</text>
 </g>
-<g><rect x="654" y="320" width="196" height="155" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
+<g><rect x="654" y="320" width="196" height="191" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
 <path d="M654,344 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
 <text x="663" y="336.5" class="titre">decoupe</text>
 <text x="842" y="336" class="tag" text-anchor="end">découpe</text>
@@ -197,22 +198,25 @@
 <text x="664" y="447" class="fk">cree_par</text>
 <text x="842" y="447" class="marque" text-anchor="end">FK</text>
 <text x="664" y="465" class="col">cree_le</text>
+<text x="664" y="483" class="col">nb_hotes_demandes</text>
+<rect x="655" y="488" width="194" height="18" fill="#F3F6FD"/>
+<text x="664" y="501" class="col">hotes_par_sr</text>
 </g>
-<g><rect x="654" y="518" width="196" height="137" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
-<path d="M654,542 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
-<text x="663" y="534.5" class="titre">sous_reseau</text>
-<text x="842" y="534" class="tag" text-anchor="end">découpe</text>
-<text x="664" y="555" class="pk">id_decoupe</text>
-<text x="842" y="555" class="marque" text-anchor="end">PK, FK</text>
-<rect x="655" y="560" width="194" height="18" fill="#F3F6FD"/>
-<text x="664" y="573" class="pk">numero</text>
-<text x="842" y="573" class="marque" text-anchor="end">PK</text>
-<text x="664" y="591" class="col">adresse_reseau</text>
+<g><rect x="654" y="554" width="196" height="137" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
+<path d="M654,578 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
+<text x="663" y="570.5" class="titre">sous_reseau</text>
+<text x="842" y="570" class="tag" text-anchor="end">découpe</text>
+<text x="664" y="591" class="pk">id_decoupe</text>
+<text x="842" y="591" class="marque" text-anchor="end">PK, FK</text>
 <rect x="655" y="596" width="194" height="18" fill="#F3F6FD"/>
-<text x="664" y="609" class="col">premiere_hote</text>
-<text x="664" y="627" class="col">derniere_hote</text>
+<text x="664" y="609" class="pk">numero</text>
+<text x="842" y="609" class="marque" text-anchor="end">PK</text>
+<text x="664" y="627" class="col">adresse_reseau</text>
 <rect x="655" y="632" width="194" height="18" fill="#F3F6FD"/>
-<text x="664" y="645" class="col">broadcast</text>
+<text x="664" y="645" class="col">premiere_hote</text>
+<text x="664" y="663" class="col">derniere_hote</text>
+<rect x="655" y="668" width="194" height="18" fill="#F3F6FD"/>
+<text x="664" y="681" class="col">broadcast</text>
 </g>
-<text x="430.0" y="701" class="legende" text-anchor="middle">PK : clé primaire (soulignée) · FK : clé étrangère (en italique) · flèche : « fait référence à » · FK ↺ : même table · autres FK : utilisateur(numero_employe)</text>
+<text x="430.0" y="719" class="legende" text-anchor="middle">PK : clé primaire (soulignée) · FK : clé étrangère (en italique) · flèche : « fait référence à » · FK ↺ : même table · autres FK : utilisateur(numero_employe)</text>
 </svg>

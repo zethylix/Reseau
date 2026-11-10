@@ -14,6 +14,14 @@ import base_donnees as bd
 
 class TestReseau(unittest.TestCase):
 
+    # Dates : stockées en UTC, affichées avec le décalage de la saison
+    def test_date_locale(self):
+        from datetime import timedelta, timezone
+        hiver, ete = timezone(timedelta(hours=1)), timezone(timedelta(hours=2))
+        self.assertEqual(app.date_locale("2026-11-09 10:05:00", hiver), "2026-11-09 11:05:00 (UTC+1)")
+        self.assertEqual(app.date_locale("2026-07-01 23:30:00", ete), "2026-07-02 01:30:00 (UTC+2)")
+        self.assertEqual(app.date_locale(None), "")
+
     # T01 — tableau CIDR
     def test_t01_tableau_cidr(self):
         lignes = app.generer_donnees_cidr()
@@ -133,6 +141,16 @@ class TestReseau(unittest.TestCase):
         self.assertFalse(app.decouper_reseau("192.168.1.0", 24, 100)[0])
         self.assertFalse(app.decouper_reseau("192.168.1.0", 24, 0)[0])
 
+    def test_decoupe_nombre_hotes(self):
+        # /24 en 3 SR -> /26 : 62 hôtes max par sous-réseau
+        ok, r = app.decouper_reseau("192.168.1.0", 24, 3)            # vide : pas de contrainte
+        self.assertTrue(ok); self.assertIsNone(r["nb_hotes_demandes"]); self.assertEqual(r["hotes_par_sr"], 62)
+        ok, r = app.decouper_reseau("192.168.1.0", 24, 3, 62)        # limite exacte
+        self.assertTrue(ok); self.assertEqual(r["nb_hotes_demandes"], 62)
+        ok, msg = app.decouper_reseau("192.168.1.0", 24, 3, 63)      # un de trop
+        self.assertFalse(ok); self.assertIn("62", msg)
+        self.assertFalse(app.decouper_reseau("192.168.1.0", 24, 3, 0)[0])
+
 
 class TestBase(unittest.TestCase):
 
@@ -223,7 +241,8 @@ class TestBase(unittest.TestCase):
         self._admin()
         app.creer_utilisateur("bob", "2002", "user", "alice")
         bd.enregistrer_tableau_cidr("1001", app.generer_donnees_cidr())
-        bd.inserer("verification_ip", "1001", ip_saisie="a.b.c.d")
+        bd.inserer("verification_ip", "1001", ip_saisie="a.b.c.d", valide=0)
+        bd.inserer("verification_ip", "1001", ip_saisie="10.0.0.1", valide=1)
         bd.inserer("classe_ip", "1001", ip="5.5.5.5")
         bd.inserer("masque_classe", "1001", ip="5.5.5.5")
         id_f5 = bd.inserer("reseau_classfull", "1001", ip="5.5.5.5", masque="255.255.0.0")
@@ -235,6 +254,10 @@ class TestBase(unittest.TestCase):
         self.assertIsNone(bd.modifier("reseau_classfull", 999, "2002", ip="1.1.1.1", masque="255.0.0.0"))
         with bd.ouvrir() as con:
             self.assertEqual(con.execute("SELECT COUNT(*) FROM ligne_tableau_cidr").fetchone()[0], 23)
+            # F2 : le résultat est un booléen 0/1, toute autre valeur est refusée
+            self.assertEqual([r[0] for r in con.execute("SELECT valide FROM verification_ip ORDER BY id")], [0, 1])
+            with self.assertRaises(Exception):
+                con.execute("INSERT INTO verification_ip (ip_saisie, valide, cree_par) VALUES ('x', 2, '1001')")
             # Une modification ajoute une version : l'originale reste intacte
             f5 = [tuple(r) for r in con.execute(
                 "SELECT id, ip, cree_par, modifie_par, modifie_depuis FROM reseau_classfull ORDER BY id")]
@@ -247,11 +270,17 @@ class TestBase(unittest.TestCase):
 
     def test_decoupe_enregistree(self):
         self._admin()
-        ok, r = app.decouper_reseau("192.168.1.0", 24, 3)
-        bd.enregistrer_decoupe("1001", "192.168.1.0", "255.255.255.0", 3, r)
+        ok, r = app.decouper_reseau("192.168.1.0", 24, 3, 50)
+        id_decoupe = bd.enregistrer_decoupe("1001", "192.168.1.0", "255.255.255.0", 3, r)
         with bd.ouvrir() as con:
             self.assertEqual(con.execute("SELECT COUNT(*) FROM sous_reseau").fetchone()[0], 3)
-            self.assertEqual(con.execute("SELECT nouveau_masque FROM decoupe").fetchone()[0], "255.255.255.192")
+            self.assertEqual(tuple(con.execute(
+                "SELECT nouveau_masque, nb_hotes_demandes, hotes_par_sr FROM decoupe").fetchone()),
+                ("255.255.255.192", 50, 62))
+        # Historique : la découpe et ses sous-réseaux se relisent depuis la base
+        self.assertEqual(bd.lister("decoupe")[0]["id"], id_decoupe)
+        self.assertEqual([s["adresse_reseau"] for s in bd.sous_reseaux(id_decoupe)],
+                         ["192.168.1.0", "192.168.1.64", "192.168.1.128"])
 
 
 if __name__ == "__main__":

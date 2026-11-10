@@ -1,8 +1,23 @@
 import bcrypt
 import secrets
 import string
+from datetime import datetime, timezone
 
 import base_donnees as bd
+
+
+def date_locale(texte_utc, fuseau=None) -> str:
+    """
+    Les dates sont stockées en UTC (CURRENT_TIMESTAMP de SQLite) pour garder un ordre
+    fiable même au changement d'heure. À l'affichage, on les convertit dans l'heure du
+    PC (heure belge) en précisant le décalage, qui change avec la saison :
+    "2026-11-09 10:05:00" -> "2026-11-09 11:05:00 (UTC+1)", et UTC+2 en été.
+    """
+    if not texte_utc:
+        return ""
+    d = datetime.strptime(texte_utc, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc).astimezone(fuseau)
+    heures = int(d.utcoffset().total_seconds() // 3600)
+    return f"{d:%Y-%m-%d %H:%M:%S} (UTC{heures:+d})"
 
 # Les comptes sont dans la base SQLite (table utilisateur, voir base_donnees.py).
 # must_change : 1 = doit changer son MDP à la prochaine connexion
@@ -441,13 +456,17 @@ def calculer_reseau_classfull(ip: str, masque: str) -> dict:
 # ─────────────────────────────────────────────
 NB_SR_MAX = 1024   # au-delà, l'affichage et la base deviennent illisibles
 
-def decouper_reseau(ip: str, cidr: int, nb_sr: int):
+def decouper_reseau(ip: str, cidr: int, nb_sr: int, nb_hotes=None):
     """
     Découpe classique : on emprunte n bits à la partie hôte, avec 2^n >= nb_sr.
+    nb_hotes (facultatif) : nombre d'hôtes voulu par sous-réseau ; la découpe est
+    refusée si un sous-réseau ne peut pas en contenir autant. None = pas de contrainte.
     Retourne (True, résultat) ou (False, message_erreur).
     """
     if not 1 <= nb_sr <= NB_SR_MAX:
         return False, f"Le nombre de sous-réseaux doit être entre 1 et {NB_SR_MAX}."
+    if nb_hotes is not None and nb_hotes < 1:
+        return False, "Le nombre d'hôtes doit être au moins 1."
     bits = 0
     while (1 << bits) < nb_sr:
         bits += 1
@@ -458,6 +477,9 @@ def decouper_reseau(ip: str, cidr: int, nb_sr: int):
 
     base   = ip_vers_entier(ip) & masque_entier(cidr)
     taille = 1 << (32 - nouveau_cidr)      # adresses par sous-réseau
+    if nb_hotes is not None and nb_hotes > taille - 2:
+        return False, (f"Impossible : avec {nb_sr} sous-réseaux (/{nouveau_cidr}), chaque "
+                       f"sous-réseau a au maximum {taille - 2} hôtes, et {nb_hotes} sont demandés.")
     sous_reseaux = []
     for i in range(nb_sr):
         reseau = base + i * taille
@@ -477,5 +499,6 @@ def decouper_reseau(ip: str, cidr: int, nb_sr: int):
         "nouveau_masque":  masque_cidr_vers_decimal(nouveau_cidr),
         "nb_sr_possibles": 1 << bits,
         "hotes_par_sr":    taille - 2,
+        "nb_hotes_demandes": nb_hotes,
         "sous_reseaux":    sous_reseaux,
     }
