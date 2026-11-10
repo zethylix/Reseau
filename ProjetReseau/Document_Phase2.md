@@ -63,7 +63,7 @@ Menu **Découpe en sous-réseaux**. On saisit un réseau, un masque (s'il est vi
 2. Le nouveau masque vaut /(masque + n). On refuse si on dépasse /30, car il resterait moins de 2 hôtes par sous-réseau.
 3. Pour chacun des N sous-réseaux, on affiche l'adresse réseau, le premier hôte, le dernier hôte et le broadcast.
 
-Tous les calculs se font à la main (opérations sur les bits), **sans bibliothèque IP**, comme l'exige l'énoncé. Si un nombre d'hôtes est demandé, on vérifie que chaque sous-réseau peut en contenir autant ; sinon la découpe est refusée avec le maximum possible. L'écran affiche le **nombre d'hôtes max par sous-réseau**. La découpe et ses sous-réseaux sont enregistrés en base (tables `decoupe` et `sous_reseau`), et un **historique** sous le formulaire permet de recharger une découpe et ses sous-réseaux.
+Tous les calculs se font à la main (opérations sur les bits), **sans bibliothèque IP**, comme l'exige l'énoncé. Si un nombre d'hôtes est demandé, on vérifie que chaque sous-réseau peut en contenir autant ; sinon la découpe est refusée avec le maximum possible. Les résultats s'affichent en 4 cartes (nouveau masque, **nombre d'hôtes max par sous-réseau**, sous-réseaux possibles, bits empruntés), au-dessus du tableau des sous-réseaux. La découpe et ses sous-réseaux sont enregistrés en base (tables `decoupe` et `sous_reseau`). Le bouton **« Historique »** ouvre une fenêtre séparée listant les découpes (seulement les saisies) : un clic sur une ligne recharge la découpe et ses sous-réseaux dans l'écran principal. L'historique est dans sa propre fenêtre pour que le tableau des sous-réseaux garde toute la place, même pour une grande découpe.
 
 ---
 

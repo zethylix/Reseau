@@ -524,6 +524,7 @@ class AppHelha:
         tk.Label(self.zone, text=texte,
                  bg=FOND, fg=GRIS, font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(12, 4))
         tree = self._tableau(self.zone, colonnes, height=5, etirer=etirer)
+        tree.tag_configure("pair", background="#DDE3EA")   # une ligne sur deux plus foncée
         etat = {"id": None, "lignes": {}}
 
         def maj_bouton():
@@ -542,9 +543,9 @@ class AppHelha:
             maj_bouton()
             tree.delete(*tree.get_children())
             etat["lignes"] = {}
-            for r in bd.lister(table):
+            for i, r in enumerate(bd.lister(table)):
                 etat["lignes"][str(r["id"])] = r
-                tree.insert("", "end", iid=str(r["id"]), values=[
+                tree.insert("", "end", iid=str(r["id"]), tags=("pair",) if i % 2 else (), values=[
                     application.date_locale(r[c]) if c.endswith("_le")
                     else (r[c] if r[c] is not None else "") for c, _, _ in colonnes])
 
@@ -708,78 +709,149 @@ class AppHelha:
         self._clear_zone()
         self._titre("Découpe en sous-réseaux")
 
-        ent_ip     = self._ligne(self.zone, "Réseau :",    "ex. 192.168.1.0")
-        ent_masque = self._ligne(self.zone, "Masque :",    "ex. 255.255.255.0 ou /24 — vide = masque de classe")
-        ent_nb     = self._ligne(self.zone, "Nb de SR :",  "ex. 3")
-        ent_hotes  = self._ligne(self.zone, "Nb d'hôtes :", "ex. 50 par sous-réseau — vide = pas de contrainte")
+        # Saisie sur 2 colonnes, l'exemple sous chaque champ (gagne de la hauteur)
+        grille = tk.Frame(self.zone, bg=FOND); grille.pack(anchor="w")
+        entrees = []
+        for i, (texte, exemple) in enumerate([
+                ("Réseau", "ex. 192.168.1.0"),
+                ("Masque", "ex. 255.255.255.0 ou /24 — vide = masque de classe"),
+                ("Nombre de sous-réseaux", "ex. 3"),
+                ("Hôtes par sous-réseau (facultatif)", "ex. 50 — vide = pas de contrainte")]):
+            case = tk.Frame(grille, bg=FOND)
+            case.grid(row=i // 2, column=i % 2, sticky="w", padx=(0, 40), pady=(0, 8))
+            tk.Label(case, text=texte, bg=FOND, fg=GRIS, font=("Segoe UI", 10)).pack(anchor="w")
+            cadre, e = self._champ(case, width=26)
+            cadre.pack(anchor="w", pady=(2, 1))
+            tk.Label(case, text=exemple, bg=FOND, fg="#6B7280",
+                     font=("Segoe UI", 9, "italic")).pack(anchor="w")
+            entrees.append(e)
+        ent_ip, ent_masque, ent_nb, ent_hotes = entrees
 
-        boutons = tk.Frame(self.zone, bg=FOND); boutons.pack(anchor="w", pady=(10, 4))
-        lbl = tk.Label(self.zone, text="", bg=FOND, font=("Segoe UI", 11, "bold"), justify="left")
-        lbl.pack(anchor="w", pady=(4, 6))
+        # Bouton et message (confirmation ou erreur) sur la même ligne
+        ligne_btn = tk.Frame(self.zone, bg=FOND); ligne_btn.pack(anchor="w", pady=(6, 12))
+        lbl = tk.Label(ligne_btn, text="", bg=FOND, font=("Segoe UI", 10, "bold"))
+
+        # Résultats en 4 cartes : titre, valeur, détail
+        cartes = tk.Frame(self.zone, bg=FOND); cartes.pack(fill="x", pady=(0, 14))
+        valeurs = []
+        for i, titre in enumerate(["Nouveau masque", "Hôtes max / SR", "SR possibles", "Bits empruntés"]):
+            carte = tk.Frame(cartes, bg="#E9ECEF", highlightthickness=1, highlightbackground="#C3CAD3")
+            carte.grid(row=0, column=i, sticky="nsew", padx=(0, 10))
+            cartes.grid_columnconfigure(i, weight=1, uniform="carte")
+            tk.Label(carte, text=titre, bg="#E9ECEF", fg=GRIS,
+                     font=("Segoe UI", 9)).pack(anchor="w", padx=12, pady=(8, 0))
+            valeur = tk.Label(carte, text="—", bg="#E9ECEF", fg=NOIR, font=("Segoe UI", 15, "bold"))
+            valeur.pack(anchor="w", padx=12)
+            detail = tk.Label(carte, text="", bg="#E9ECEF", fg="#6B7280", font=("Segoe UI", 9))
+            detail.pack(anchor="w", padx=12, pady=(0, 8))
+            valeurs.append((valeur, detail))
+
+        tk.Label(self.zone, text="Sous-réseaux", bg=FOND, fg=NOIR,
+                 font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(0, 4))
+        # Le tableau prend toute la place restante : l'historique est dans sa propre fenêtre
         tab = self._tableau(self.zone, [("numero", "N°", 50), ("reseau", "Sous-réseau", 140),
                                         ("premiere", "1ère hôte", 140), ("derniere", "Dernière hôte", 140),
-                                        ("broadcast", "Broadcast", 140)], height=4, etirer=False)
+                                        ("broadcast", "Broadcast", 140)], height=4)
+        tab.tag_configure("pair", background="#DDE3EA")
 
-        def afficher(ip, cidr, r, sous_reseaux, message):
-            """Résumé de la découpe + tableau des sous-réseaux."""
-            hotes = r["nb_hotes_demandes"]
-            lbl.config(fg=NOIR, text=(
-                f"Réseau de départ : {ip} /{cidr}   •   {r['nb_sr_demandes']} sous-réseau(x) demandé(s)"
-                + (f"   •   {hotes} hôtes demandés" if hotes else "") + "\n"
-                f"Nouveau masque : {r['nouveau_masque']}   •   "
-                f"nombre d'hôtes max par sous-réseau : {r['hotes_par_sr']}\n" + message))
+        def message(texte, couleur):
+            lbl.config(text=texte, fg=couleur)
+
+        def vider():
             tab.delete(*tab.get_children())
-            tab.configure(height=min(max(len(sous_reseaux), 2), 10))   # hauteur adaptée, défilement au-delà
-            for sr in sous_reseaux:
-                tab.insert("", "end", values=(sr["numero"], sr["adresse_reseau"], sr["premiere_hote"],
-                                              sr["derniere_hote"], sr["broadcast"]))
+            for valeur, detail in valeurs:
+                valeur.config(text="—"); detail.config(text="")
+
+        def afficher(cidr, nouveau_cidr, nb_sr, hotes_demandes, hotes_max, sous_reseaux):
+            """Remplit les 4 cartes et le tableau des sous-réseaux."""
+            bits = nouveau_cidr - cidr
+            for (valeur, detail), (v, d) in zip(valeurs, [
+                    (f"/{nouveau_cidr}", application.masque_cidr_vers_decimal(nouveau_cidr)),
+                    (hotes_max, f"{hotes_demandes} demandés" if hotes_demandes else "aucune contrainte"),
+                    (1 << bits, f"{nb_sr} demandé(s)"),
+                    (bits, f"depuis /{cidr}")]):
+                valeur.config(text=v); detail.config(text=d)
+            tab.delete(*tab.get_children())
+            for i, sr in enumerate(sous_reseaux):
+                tab.insert("", "end", tags=("pair",) if i % 2 else (), values=(
+                    sr["numero"], sr["adresse_reseau"], sr["premiere_hote"], sr["derniere_hote"], sr["broadcast"]))
 
         def recharger(ligne):
             """Ligne de l'historique : on remet la saisie et on relit les sous-réseaux en base."""
             for e, v in [(ent_ip, ligne["ip"]), (ent_masque, ligne["masque"]),
                          (ent_nb, ligne["nb_sr_demandes"]), (ent_hotes, ligne["nb_hotes_demandes"] or "")]:
                 e.delete(0, "end"); e.insert(0, v)
-            cidr = application.lire_masque(ligne["masque"])
-            afficher(ligne["ip"], cidr, ligne, bd.sous_reseaux(ligne["id"]),
-                     f"Découpe n° {ligne['id']} rechargée depuis l'historique")
+            afficher(application.lire_masque(ligne["masque"]), application.lire_masque(ligne["nouveau_masque"]),
+                     ligne["nb_sr_demandes"], ligne["nb_hotes_demandes"], ligne["hotes_par_sr"],
+                     bd.sous_reseaux(ligne["id"]))
+            message(f"Découpe n° {ligne['id']} rechargée depuis l'historique", GRIS)
 
         def decouper():
-            tab.delete(*tab.get_children())
+            vider()
             ip = ent_ip.get().strip()
             if not application.verifier_format_ip(ip):
-                lbl.config(text="✘  Réseau invalide (ex. 192.168.1.0)", fg=ROUGE); return
+                message("✘  Réseau invalide (ex. 192.168.1.0)", ROUGE); return
             if ent_masque.get().strip():
                 cidr = application.lire_masque(ent_masque.get())
             else:
                 cidr = application.prefixe_classe(ip)
             if cidr is None:
-                lbl.config(text="✘  Masque invalide (une adresse D/E n'a pas de masque de classe)",
-                           fg=ROUGE); return
+                message("✘  Masque invalide (une adresse D/E n'a pas de masque de classe)", ROUGE); return
             nb = ent_nb.get().strip()
             if not (nb.isascii() and nb.isdigit()):
-                lbl.config(text="✘  Le nombre de sous-réseaux doit être un entier", fg=ROUGE); return
+                message("✘  Le nombre de sous-réseaux doit être un entier", ROUGE); return
             hotes = ent_hotes.get().strip()
             if hotes and not (hotes.isascii() and hotes.isdigit()):
-                lbl.config(text="✘  Le nombre d'hôtes doit être un entier (ou vide)", fg=ROUGE); return
+                message("✘  Le nombre d'hôtes doit être un entier (ou vide)", ROUGE); return
 
             ok, r = application.decouper_reseau(ip, cidr, int(nb), int(hotes) if hotes else None)
             if not ok:
-                lbl.config(text="✘  " + r, fg=ROUGE); return
+                message("✘  " + r, ROUGE); return
             masque = application.masque_cidr_vers_decimal(cidr)
             id_decoupe = bd.enregistrer_decoupe(self.user_numero, ip, masque, int(nb), r)
-            rafraichir()
-            afficher(r["reseau"], cidr,
-                     dict(r, nb_sr_demandes=int(nb), nouveau_masque=f"{r['nouveau_masque']} (/{r['nouveau_cidr']})"),
-                     bd.sous_reseaux(id_decoupe),
-                     f"{r['bits_empruntes']} bit(s) emprunté(s)   •   {r['nb_sr_possibles']} sous-réseaux possibles"
-                     f"   •   ✔  Découpe n° {id_decoupe} enregistrée")
+            afficher(cidr, r["nouveau_cidr"], int(nb), r["nb_hotes_demandes"], r["hotes_par_sr"],
+                     bd.sous_reseaux(id_decoupe))
+            message(f"✔  Découpe n° {id_decoupe} enregistrée", VERT)
 
-        self._btn(boutons, "Découper", decouper).pack(side="left", ipadx=20, ipady=6)
-        rafraichir, _ = self._historique("decoupe", [
-            ("id", "N°", 45), ("ip", "Réseau", 120), ("masque", "Masque", 120),
-            ("nb_sr_demandes", "Nb SR", 60), ("nb_hotes_demandes", "Hôtes demandés", 110),
-            ("cree_par", "Créé par", 75), ("cree_le", "Date (heure belge)", 190)], recharger, etirer=False)
-        self._valider_avec_entree([ent_ip, ent_masque, ent_nb, ent_hotes], decouper)
+        def ouvrir_historique():
+            """Historique des découpes dans une fenêtre à part ; un clic recharge la découpe."""
+            fenetre = tk.Toplevel(self.root)
+            fenetre.title("Historique des découpes")
+            fenetre.geometry("820x460")
+            fenetre.configure(bg=FOND)
+            fenetre.transient(self.root)
+            tk.Label(fenetre, text="Historique des découpes", bg=FOND, fg=NOIR,
+                     font=("Segoe UI", 15, "bold")).pack(anchor="w", padx=20, pady=(16, 2))
+            tk.Label(fenetre, text="Cliquez une ligne pour recharger la découpe dans l'écran principal.",
+                     bg=FOND, fg=GRIS, font=("Segoe UI", 10)).pack(anchor="w", padx=20, pady=(0, 10))
+            cadre = tk.Frame(fenetre, bg=FOND); cadre.pack(fill="both", expand=True, padx=20)
+            colonnes = [("id", "N°", 45), ("ip", "Réseau", 130), ("masque", "Masque", 130),
+                        ("nb_sr_demandes", "SR", 50), ("nb_hotes_demandes", "Hôtes", 60),
+                        ("cree_par", "Par", 50), ("cree_le", "Date (heure belge)", 190)]
+            arbre = self._tableau(cadre, colonnes, height=10)
+            arbre.tag_configure("pair", background="#DDE3EA")
+            lignes = {}
+            for i, r in enumerate(bd.lister("decoupe")):
+                lignes[str(r["id"])] = r
+                arbre.insert("", "end", iid=str(r["id"]), tags=("pair",) if i % 2 else (), values=[
+                    application.date_locale(r[c]) if c.endswith("_le")
+                    else (r[c] if r[c] is not None else "") for c, _, _ in colonnes])
+
+            def choisir(_):
+                sel = arbre.selection()
+                if sel:
+                    recharger(lignes[sel[0]])
+                    fenetre.destroy()
+
+            arbre.bind("<<TreeviewSelect>>", choisir)
+            self._btn(fenetre, "Fermer", fenetre.destroy, couleur="#4A6278").pack(
+                anchor="e", padx=20, pady=12, ipadx=14, ipady=3)
+
+        self._btn(ligne_btn, "Découper", decouper).pack(side="left", ipadx=20, ipady=6)
+        self._btn(ligne_btn, "Historique", ouvrir_historique, couleur="#4A6278").pack(
+            side="left", padx=(8, 0), ipadx=14, ipady=6)
+        lbl.pack(side="left", padx=14)
+        self._valider_avec_entree(entrees, decouper)
         ent_ip.focus_set()
 
 
