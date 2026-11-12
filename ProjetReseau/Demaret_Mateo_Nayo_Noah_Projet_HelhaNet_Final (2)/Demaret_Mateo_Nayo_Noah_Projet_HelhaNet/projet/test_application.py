@@ -241,8 +241,8 @@ class TestBase(unittest.TestCase):
         self._admin()
         app.creer_utilisateur("bob", "2002", "user", "alice")
         bd.enregistrer_tableau_cidr("1001", app.generer_donnees_cidr())
-        bd.inserer("verification_ip", "1001", ip_saisie="a.b.c.d", valide=0)
-        bd.inserer("verification_ip", "1001", ip_saisie="10.0.0.1", valide=1)
+        bd.inserer("verification_ip", "1001", ip_saisie="a.b.c.d")
+        bd.inserer("verification_ip", "1001", ip_saisie="10.0.0.1")
         bd.inserer("classe_ip", "1001", ip="5.5.5.5")
         bd.inserer("masque_classe", "1001", ip="5.5.5.5")
         id_f5 = bd.inserer("reseau_classfull", "1001", ip="5.5.5.5", masque="255.255.0.0")
@@ -254,10 +254,9 @@ class TestBase(unittest.TestCase):
         self.assertIsNone(bd.modifier("reseau_classfull", 999, "2002", ip="1.1.1.1", masque="255.0.0.0"))
         with bd.ouvrir() as con:
             self.assertEqual(con.execute("SELECT COUNT(*) FROM ligne_tableau_cidr").fetchone()[0], 23)
-            # F2 : le résultat est un booléen 0/1, toute autre valeur est refusée
-            self.assertEqual([r[0] for r in con.execute("SELECT valide FROM verification_ip ORDER BY id")], [0, 1])
-            with self.assertRaises(Exception):
-                con.execute("INSERT INTO verification_ip (ip_saisie, valide, cree_par) VALUES ('x', 2, '1001')")
+            # F2 : seule la saisie est gardée, pas le résultat (consignes)
+            colonnes = [r[1] for r in con.execute("PRAGMA table_info(verification_ip)")]
+            self.assertEqual(colonnes, ["id", "ip_saisie", "cree_par", "cree_le"])
             # Une modification ajoute une version : l'originale reste intacte
             f5 = [tuple(r) for r in con.execute(
                 "SELECT id, ip, cree_par, modifie_par, modifie_depuis FROM reseau_classfull ORDER BY id")]

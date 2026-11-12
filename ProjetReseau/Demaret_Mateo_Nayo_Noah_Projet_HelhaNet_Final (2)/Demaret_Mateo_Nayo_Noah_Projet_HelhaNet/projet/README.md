@@ -1,7 +1,7 @@
 # HELHA.net — Phase 2
 
 Logiciel de gestion de réseau IP (Python, interface Tkinter, base SQLite 3).
-Projet de phase 1 repris de Bruno Alexis et Chen Kevin, puis corrigé et complété en phase 2.
+Projet de phase 1 repris de Bruno Alexis et Chen Kevin, puis corrigé et complété en phase 2 par Demaret Mateo et Nayo Noah.
 
 ## Installation
 
@@ -45,7 +45,7 @@ Aucune base n'est livrée avec le projet : il n'y a donc pas de compte dont le m
 | Masque de classe | F4 — Masque de classe de l'adresse |
 | Réseau / Sous-réseau | F5 — Réseau de classe et sous-réseau d'une IP avec son masque |
 | Même réseau ? | F6 — Deux IP, chacune avec son masque : vérification dans les deux sens |
-| Découpe en sous-réseaux | Découpe d'un réseau selon le nombre de sous-réseaux voulu |
+| Découpe en sous-réseaux | Découpe d'un réseau selon le nombre de sous-réseaux voulu (nombre d'hôtes facultatif), avec un historique des découpes |
 
 Les masques s'écrivent au choix `255.255.255.0`, `/24` ou `24`. Chaque utilisation est enregistrée dans la base avec le numéro d'employé de la personne connectée.
 
@@ -55,7 +55,7 @@ Les masques s'écrivent au choix `255.255.255.0`, `/24` ou `24`. Chaque utilisat
 python -m unittest test_application -v
 ```
 
-21 tests : cas T01 à T20 de la fiche de recette, bugs corrigés, droits des administrateurs, découpe et base de données. Les tests utilisent une base temporaire et ne touchent pas à `helhanet.db`.
+23 tests : cas T01 à T20 de la fiche de recette, bugs corrigés, droits des administrateurs, dates, découpe et base de données. Les tests utilisent une base temporaire et ne touchent pas à `helhanet.db`.
 
 ## Fichiers
 

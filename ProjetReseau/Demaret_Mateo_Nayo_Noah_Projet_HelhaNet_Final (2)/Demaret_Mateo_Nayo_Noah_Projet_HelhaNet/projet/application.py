@@ -270,19 +270,23 @@ def sauvegarde_admin_initial(nom: str, numero_employe: str, mdp: str):
 #  OUTILS RÉSEAU (calculs faits à la main, sans librairie IP)
 # ─────────────────────────────────────────────
 def ip_vers_entier(ip: str) -> int:
+    # on colle les 4 octets dans un seul nombre de 32 bits (ex. 192.168.1.10 -> 3232235786)
     o = [int(p) for p in ip.split('.')]
     return (o[0] << 24) | (o[1] << 16) | (o[2] << 8) | o[3]
 
 def entier_vers_ip(n: int) -> str:
+    # l'inverse : on décale et on garde les 8 derniers bits (& 0xFF) pour chaque octet
     return ".".join(str((n >> s) & 0xFF) for s in (24, 16, 8, 0))
 
 def masque_entier(cidr: int) -> int:
+    # /24 = 24 bits à 1 puis 8 bits à 0 ; le & 0xFFFFFFFF coupe ce qui dépasse 32 bits
     return (0xFFFFFFFF << (32 - cidr)) & 0xFFFFFFFF
 
 def masque_cidr_vers_decimal(cidr: int) -> str:
     return entier_vers_ip(masque_entier(cidr))
 
 def masque_vers_cidr(masque: str) -> int:
+    # le préfixe, c'est simplement le nombre de bits à 1 dans le masque
     return bin(ip_vers_entier(masque)).count('1')
 
 def generer_donnees_cidr() -> list:
@@ -364,6 +368,7 @@ def role_avec_masque_classe(ip: str):
     prefixe = prefixe_classe(ip)
     if prefixe is None:
         return None
+    # on ne garde que la partie hôte : tout à 0 = adresse réseau, tout à 1 = broadcast
     partie_hote = ip_vers_entier(ip) & ~masque_entier(prefixe) & 0xFFFFFFFF
     if partie_hote == 0:
         return "Adresse réseau"
@@ -373,6 +378,7 @@ def role_avec_masque_classe(ip: str):
 
 def meme_reseau(ip1: str, ip2: str, cidr: int) -> dict:
     """Vu avec le masque /cidr : les deux IP ont-elles la même adresse réseau ?"""
+    # même réseau si le ET avec le masque donne la même adresse réseau pour les deux IP
     masque_int  = masque_entier(cidr)
     reseau1_int = ip_vers_entier(ip1) & masque_int
     reseau2_int = ip_vers_entier(ip2) & masque_int
@@ -434,6 +440,7 @@ def calculer_reseau_classfull(ip: str, masque: str) -> dict:
     else:
         premiere = entier_vers_ip(reseau_int + 1)
         derniere = entier_vers_ip(broadcast_int - 1)
+        # 2^(bits hôte) adresses, moins l'adresse réseau et le broadcast
         nb_hotes = 2 ** (32 - cidr) - 2
 
     return {
@@ -467,6 +474,7 @@ def decouper_reseau(ip: str, cidr: int, nb_sr: int, nb_hotes=None):
         return False, f"Le nombre de sous-réseaux doit être entre 1 et {NB_SR_MAX}."
     if nb_hotes is not None and nb_hotes < 1:
         return False, "Le nombre d'hôtes doit être au moins 1."
+    # plus petit n tel que 2^n >= nb_sr (ex. 3 SR -> 2 bits empruntés -> 4 SR possibles)
     bits = 0
     while (1 << bits) < nb_sr:
         bits += 1
@@ -475,6 +483,7 @@ def decouper_reseau(ip: str, cidr: int, nb_sr: int, nb_hotes=None):
         return False, (f"Impossible : il faudrait un masque /{nouveau_cidr}, "
                        "il ne resterait pas 2 hôtes par sous-réseau.")
 
+    # on repart de l'adresse réseau, même si on a tapé une adresse d'hôte (192.168.1.10 -> .0)
     base   = ip_vers_entier(ip) & masque_entier(cidr)
     taille = 1 << (32 - nouveau_cidr)      # adresses par sous-réseau
     if nb_hotes is not None and nb_hotes > taille - 2:
@@ -482,6 +491,7 @@ def decouper_reseau(ip: str, cidr: int, nb_sr: int, nb_hotes=None):
                        f"sous-réseau a au maximum {taille - 2} hôtes, et {nb_hotes} sont demandés.")
     sous_reseaux = []
     for i in range(nb_sr):
+        # les sous-réseaux se suivent : chacun commence juste après le broadcast du précédent
         reseau = base + i * taille
         broadcast = reseau + taille - 1
         sous_reseaux.append({

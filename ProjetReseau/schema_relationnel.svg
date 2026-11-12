@@ -49,7 +49,7 @@
 <text x="198" y="101" class="marque" text-anchor="end">FK</text>
 <text x="20" y="119" class="col">confirme_le</text>
 </g>
-<g><rect x="10" y="146" width="196" height="119" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
+<g><rect x="10" y="146" width="196" height="101" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
 <path d="M10,170 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>
 <text x="19" y="162.5" class="titre">verification_ip</text>
 <text x="198" y="162" class="tag" text-anchor="end">F2</text>
@@ -61,7 +61,6 @@
 <text x="198" y="219" class="marque" text-anchor="end">FK</text>
 <rect x="11" y="224" width="194" height="18" fill="#F3F6FD"/>
 <text x="20" y="237" class="col">cree_le</text>
-<text x="20" y="255" class="col">valide (booléen)</text>
 </g>
 <g><rect x="10" y="282" width="196" height="101" rx="5" fill="#fff" stroke="#1A56DB" stroke-width="1.4"/>
 <path d="M10,306 v-19 q0,-5 5,-5 h186 q5,0 5,5 v19 z" fill="#1A56DB"/>

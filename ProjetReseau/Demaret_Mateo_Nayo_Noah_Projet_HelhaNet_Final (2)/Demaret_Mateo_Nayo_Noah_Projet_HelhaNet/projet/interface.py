@@ -472,9 +472,9 @@ class AppHelha:
     #  OUTIL 2 — FORMAT D'UNE IP (la saisie est enregistrée, même invalide)
     def _ouvrir_format_ip(self):
         def analyser(ip, lbl_status, resultat):
-            valide = application.verifier_format_ip(ip)
-            bd.inserer("verification_ip", self.user_numero, ip_saisie=ip, valide=int(valide))
-            if valide:
+            # on ne garde que la saisie, le résultat se recalcule (consignes)
+            bd.inserer("verification_ip", self.user_numero, ip_saisie=ip)
+            if application.verifier_format_ip(ip):
                 lbl_status.config(text="✔  IP valide", fg=VERT)
             else:
                 lbl_status.config(text=MSG_IP_INVALIDE, fg=ROUGE)
