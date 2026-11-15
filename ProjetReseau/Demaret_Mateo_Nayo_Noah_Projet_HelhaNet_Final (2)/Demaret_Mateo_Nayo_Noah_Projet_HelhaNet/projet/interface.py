@@ -513,9 +513,9 @@ class AppHelha:
 
     def _historique(self, table, colonnes, recharger, bouton_modif=None, etirer=True):
         """
-        Derniers enregistrements d'une table (F6, découpe). Un clic recharge la saisie.
+        Derniers enregistrements d'une table (F5, F6, découpe). Un clic recharge la saisie.
         Retourne (fonction de rafraîchissement, état de sélection).
-        Avec un bouton de modification (F6) : il reste grisé tant qu'aucune ligne
+        Avec un bouton de modification (F5, F6) : il reste grisé tant qu'aucune ligne
         n'est choisie, puis affiche le numéro de la ligne qui sera remplacée.
         """
         texte = "Historique — cliquez une ligne pour la recharger"
@@ -589,29 +589,57 @@ class AppHelha:
             if erreur:
                 lbl_err.config(text="✘  " + erreur, fg=ROUGE); return None
             r = application.calculer_reseau_classfull(ip, masque)
-            self._resultats(res_frame, [
+            # deux colonnes (comme F6) pour que l'historique reste visible sur un petit écran
+            gauche = tk.Frame(res_frame, bg=FOND); gauche.pack(side="left", anchor="n", padx=(0, 30))
+            droite = tk.Frame(res_frame, bg=FOND); droite.pack(side="left", anchor="n")
+            self._resultats(gauche, [
                 ("Classe",           r["classe"]),
                 ("Masque de classe", r["masque_classe"]),
                 ("Réseau",           r["reseau_classe"]),
-                ("",                 ""),
+            ], largeur=16)
+            self._resultats(droite, [
                 ("Masque appliqué",  f"{r['masque']}  (/{r['cidr']})"),
                 ("Sous-réseau",      r["reseau"]),
                 ("Broadcast",        r["broadcast"]),
                 ("1ère hôte",        r["premiere_hote"]),
                 ("Dernière hôte",    r["derniere_hote"]),
                 ("Nb hôtes",         str(r["nb_hotes"])),
-            ])
+            ], largeur=16)
             return ip, masque
 
         def calc():
             saisie = lire_saisie()
             if saisie:
-                # Pas d'historique à l'écran pour cette fonctionnalité : la saisie est
-                # seulement enregistrée en base (taggée par l'employé).
                 bd.inserer("reseau_classfull", self.user_numero, ip=saisie[0], masque=saisie[1])
+                rafraichir()
                 lbl_err.config(text="✔  Calcul enregistré", fg=VERT)
 
+        def modifier():
+            # comme pour F6 : on ajoute une nouvelle version, l'ancienne ligne est gardée
+            if etat["id"] is None:
+                messagebox.showwarning("Sélection", "Cliquez d'abord une ligne de l'historique."); return
+            saisie = lire_saisie()
+            if saisie:
+                ancien = etat["id"]
+                nouveau = bd.modifier("reseau_classfull", ancien, self.user_numero,
+                                      ip=saisie[0], masque=saisie[1])
+                rafraichir(nouveau)
+                messagebox.showinfo("Modification", f"Nouvelle version n° {nouveau} enregistrée "
+                                                    f"(remplace n° {ancien}, conservé).")
+
+        def recharger(ligne):
+            for e, v in [(ent_ip, ligne["ip"]), (ent_masque, ligne["masque"])]:
+                e.delete(0, "end"); e.insert(0, v)
+            lire_saisie()
+
         self._btn(boutons, "Calculer", calc).pack(side="left", ipadx=20, ipady=6)
+        btn_modif = self._btn(boutons, "", modifier, couleur="#5A7299", disabledforeground="white")
+        btn_modif.pack(side="left", padx=8, ipadx=10, ipady=6)
+        rafraichir, etat = self._historique("reseau_classfull", [
+            ("id", "N°", 45), ("ip", "IP", 130), ("masque", "Masque", 130),
+            ("cree_par", "Créé par", 75), ("modifie_par", "Modifié par", 85),
+            ("cree_le", "Date (heure belge)", 190), ("modifie_depuis", "Remplace n°", 85)],
+            recharger, btn_modif)
         self._valider_avec_entree([ent_ip, ent_masque], calc)
         ent_ip.focus_set()
 
